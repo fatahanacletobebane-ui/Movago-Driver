@@ -1,0 +1,858 @@
+ '''<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>MovaGo — Console do Motorista</title>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+<style>
+  :root{
+    --primary:#FF6B00;
+    --primary-light:#FF8C42;
+    --secondary:#FFD700;
+    --accent:#00C853;
+    --danger:#ff4757;
+    --info:#3498db;
+    --purple:#9c27b0;
+    --dark:#0a0a0a;
+    --card-bg:rgba(255,255,255,0.03);
+    --glass: rgba(255,255,255,0.06);
+    --text-primary:#ffffff;
+    --text-secondary:#a0a0a0;
+    --gradient-hero: linear-gradient(135deg, #FF6B00 0%, #FFD700 50%, #FF8C42 100%);
+    --gradient-bg: linear-gradient(180deg, #0a0a0a 0%, #1a1a2e 50%, #0f0f23 100%);
+  }
+  
+  *{box-sizing:border-box;font-family:'Poppins',system-ui,sans-serif;margin:0;padding:0}
+  
+  body{
+    margin:0; min-height:100vh;
+    background: var(--gradient-bg);
+    color:var(--text-primary);
+    overflow-x:hidden;
+  }
+  
+  .app{
+    max-width:900px;margin:0 auto;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+  }
+  
+  /* Header */
+  .header{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:20px;
+    background:linear-gradient(180deg, rgba(255,107,0,0.1) 0%, transparent 100%);
+    border-bottom:1px solid rgba(255,255,255,0.05);
+    position:sticky;top:0;z-index:100;backdrop-filter:blur(10px);
+  }
+  
+  .logo-container{display:flex;align-items:center;gap:12px}
+  .logo-icon{
+    width:44px;height:44px;border-radius:12px;
+    background:var(--gradient-hero);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 8px 32px rgba(255,107,0,0.3);
+    font-size:22px;
+  }
+  .logo-text h1{
+    font-size:24px;font-weight:800;
+    background:var(--gradient-hero);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+    background-clip:text;
+    margin:0;
+  }
+  .logo-text span{font-size:10px;color:var(--text-secondary);font-weight:500;letter-spacing:1px;text-transform:uppercase}
+  
+  .driver-status{
+    display:flex;align-items:center;gap:12px;
+  }
+  
+  .status-toggle{
+    display:flex;align-items:center;gap:8px;
+    background:var(--glass);padding:8px 16px;border-radius:20px;
+    border:1px solid rgba(255,255,255,0.1);cursor:pointer;
+    transition:all 0.3s;
+  }
+  .status-toggle:hover{background:rgba(255,255,255,0.1)}
+  .status-toggle.active{background:rgba(0,200,83,0.2);border-color:var(--accent)}
+  
+  .status-dot{
+    width:10px;height:10px;border-radius:50%;background:var(--text-secondary);
+    transition:all 0.3s;
+  }
+  .status-toggle.active .status-dot{background:var(--accent);box-shadow:0 0 10px var(--accent)}
+  
+  /* Main Content */
+  .content{padding:20px;flex:1}
+  
+  /* Stats Cards */
+  .stats-grid{
+    display:grid;grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));gap:16px;margin-bottom:24px;
+  }
+  .stat-card{
+    background:var(--glass);padding:20px;border-radius:16px;text-align:center;
+    border:1px solid rgba(255,255,255,0.05);
+  }
+  .stat-value{font-size:32px;font-weight:700;color:var(--primary);margin-bottom:4px}
+  .stat-label{font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px}
+  
+  /* Sections */
+  .section-title{
+    font-size:18px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px;
+  }
+  
+  /* Request Cards */
+  .requests-container{display:flex;flex-direction:column;gap:16px}
+  
+  .request-card{
+    background:var(--glass);border-radius:20px;padding:20px;
+    border:1px solid rgba(255,255,255,0.05);
+    transition:all 0.3s;position:relative;overflow:hidden;
+  }
+  .request-card:hover{transform:translateY(-2px);box-shadow:0 10px40px rgba(0,0,0,0.3)}
+  .request-card.new{border-left:4px solid var(--primary);animation:pulse-border 2s infinite}
+  @keyframes pulse-border{
+    0%,100%{border-left-color:var(--primary)}
+    50%{border-left-color:var(--secondary)}
+  }
+  
+  .request-header{
+    display:flex;justify-content:space-between;align-items:start;margin-bottom:16px;
+  }
+  
+  .passenger-info{display:flex;align-items:center;gap:12px}
+  .passenger-avatar{
+    width:48px;height:48px;border-radius:50%;
+    background:var(--gradient-hero);display:flex;align-items:center;justify-content:center;
+    font-size:20px;font-weight:700;
+  }
+  .passenger-details h3{margin:0;font-size:16px;margin-bottom:2px}
+  .passenger-details p{margin:0;font-size:13px;color:var(--text-secondary)}
+  
+  .request-time{font-size:12px;color:var(--text-secondary)}
+  
+  .route-display{
+    display:flex;align-items:center;gap:16px;margin:16px 0;padding:16px;
+    background:rgba(0,0,0,0.2);border-radius:12px;
+  }
+  
+  .route-points{display:flex;flex-direction:column;gap:8px;align-items:center}
+  .route-dot{width:12px;height:12px;border-radius:50%}
+  .route-dot.pickup{background:var(--primary);box-shadow:0 0 10px var(--primary)}
+  .route-dot.dest{background:var(--secondary);box-shadow:0 0 10px var(--secondary)}
+  .route-line{width:2px;height:30px;background:linear-gradient(180deg, var(--primary), var(--secondary))}
+  
+  .route-details{flex:1}
+  .route-item{margin-bottom:12px}
+  .route-item:last-child{margin-bottom:0}
+  .route-label{font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px}
+  .route-value{font-size:14px;font-weight:500}
+  
+  .trip-info{
+    display:flex;gap:16px;margin-top:16px;padding-top:16px;
+    border-top:1px solid rgba(255,255,255,0.05);
+  }
+  .trip-stat{display:flex;align-items:center;gap:6px;font-size:14px}
+  .trip-stat-icon{font-size:16px}
+  .trip-stat-value{font-weight:600;color:var(--secondary)}
+  
+  .request-actions{
+    display:flex;gap:12px;margin-top:20px;
+  }
+  
+  .actionBtn{
+    flex:1;padding:14px;border:none;border-radius:12px;cursor:pointer;
+    font-size:14px;font-weight:600;transition:all 0.3s;
+    display:flex;align-items:center;justify-content:center;gap:8px;
+  }
+  .actionBtn:hover:not(:disabled){transform:translateY(-2px)}
+  .actionBtn:disabled{opacity:0.5;cursor:not-allowed}
+  
+  .btn-accept{
+    background:linear-gradient(135deg, var(--accent) 0%, #00e676 100%);
+    color:#fff;box-shadow:0 4px 16px rgba(0,200,83,0.3);
+  }
+  .btn-accept:hover{box-shadow:0 6px 24px rgba(0,200,83,0.4)}
+  
+  .btn-reject{
+    background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.1);
+  }
+  .btn-reject:hover{background:rgba(255,71,87,0.2);border-color:var(--danger)}
+  
+  .btn-primary{
+    background:linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+    color:#fff;box-shadow:0 4px 16px rgba(255,107,0,0.3);
+  }
+  
+  .btn-arrived{
+    background:linear-gradient(135deg, var(--purple) 0%, #ce93d8 100%);
+    color:#fff;box-shadow:0 4px 16px rgba(156,39,176,0.3);
+  }
+  
+  .btn-complete{
+    background:linear-gradient(135deg, var(--info) 0%, #64b5f6 100%);
+    color:#fff;box-shadow:0 4px 16px rgba(33,150,243,0.3);
+  }
+  
+  /* Active Trip Banner */
+  .active-trip-banner{
+    background:var(--gradient-hero);border-radius:20px;padding:20px;margin-bottom:24px;
+    position:relative;overflow:hidden;
+  }
+  .active-trip-banner::before{
+    content:"";position:absolute;inset:0;
+    background:linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
+    animation:shimmer 3s infinite;
+  }
+  @keyframes shimmer{
+    0%{transform:translateX(-100%)}
+    100%{transform:translateX(100%)}
+  }
+  
+  .banner-content{position:relative;z-index:1}
+  .banner-title{font-size:14px;opacity:0.9;margin-bottom:4px;text-transform:uppercase;letter-spacing:1px}
+  .banner-text{font-size:18px;font-weight:700}
+  
+  /* Empty State */
+  .empty-state{
+    text-align:center;padding:60px 20px;color:var(--text-secondary);
+  }
+  .empty-icon{font-size:64px;margin-bottom:16px;opacity:0.5}
+  .empty-title{font-size:18px;font-weight:600;color:var(--text-primary);margin-bottom:8px}
+  
+  /* Driver Form */
+  .driver-form{
+    max-width:400px;margin:0 auto;padding:40px 20px;
+  }
+  .form-group{margin-bottom:20px}
+  .form-group label{display:block;margin-bottom:8px;font-size:13px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px}
+  .form-group input{
+    width:100%;padding:14px 16px;font-size:15px;color:#fff;
+    background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);
+    border-radius:12px;outline:none;transition:all 0.3s;
+  }
+  .form-group input:focus{
+    border-color:var(--primary);background:rgba(255,107,0,0.05);
+    box-shadow:0 0 0 4px rgba(255,107,0,0.1);
+  }
+  
+  /* Toast Notifications */
+  .toast-container{
+    position:fixed;top:20px;right:20px;z-index:10000;
+    display:flex;flex-direction:column;gap:8px;
+  }
+  .toast{
+    background:rgba(30,30,40,0.95);color:#fff;padding:16px 20px;border-radius:12px;
+    font-size:14px;font-weight:500;backdrop-filter:blur(10px);
+    border:1px solid rgba(255,255,255,0.1);box-shadow:0 10px 40px rgba(0,0,0,0.3);
+    display:flex;align-items:center;gap:10px;
+    animation:toast-in 0.3s ease;min-width:280px;
+    border-left:4px solid var(--primary);
+  }
+  @keyframes toast-in{
+    from{opacity:0;transform:translateX(100%)}
+    to{opacity:1;transform:translateX(0)}
+  }
+  
+  /* Sound Toggle */
+  .sound-toggle{
+    background:var(--glass);border:none;color:var(--text-secondary);
+    width:40px;height:40px;border-radius:50%;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;font-size:18px;
+    transition:all 0.3s;border:1px solid rgba(255,255,255,0.1);
+  }
+  .sound-toggle:hover{color:var(--primary);background:rgba(255,107,0,0.1)}
+  .sound-toggle.active{color:var(--primary)}
+  
+  /* Responsive */
+  @media(max-width:600px){
+    .stats-grid{grid-template-columns:repeat(2, 1fr)}
+    .request-actions{flex-direction:column}
+    .trip-info{flex-wrap:wrap}
+  }
+</style>
+</head>
+<body>
+  <div class="toast-container" id="toastContainer"></div>
+  
+  <div class="app">
+    <!-- Header -->
+    <div class="header">
+      <div class="logo-container">
+        <div class="logo-icon">🚗</div>
+        <div class="logo-text">
+          <h1>MovaGo</h1>
+          <span>Console do Motorista</span>
+        </div>
+      </div>
+      <div class="driver-status" id="driverStatus" style="display:none">
+        <button class="sound-toggle" id="soundToggle" onclick="toggleSound()">🔔</button>
+        <div class="status-toggle" id="statusToggle" onclick="toggleOnline()">
+          <div class="status-dot"></div>
+          <span id="statusText">Offline</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="content" id="mainContent">
+      
+      <!-- DRIVER REGISTRATION -->
+      <div id="registrationForm">
+        <div class="driver-form">
+          <div style="text-align:center;margin-bottom:32px">
+            <div style="font-size:64px;margin-bottom:16px">👤</div>
+            <h2 style="margin-bottom:8px">Registo de Motorista</h2>
+            <p style="color:var(--text-secondary);font-size:14px">Complete os seus dados para começar</p>
+          </div>
+          
+          <div class="form-group">
+            <label>Nome Completo</label>
+            <input type="text" id="driverName" placeholder="Ex: João Silva" />
+          </div>
+          
+          <div class="form-group">
+            <label>Número de Telefone</label>
+            <input type="tel" id="driverPhone" placeholder="84XXXXXXX" maxlength="9" />
+          </div>
+          
+          <div class="form-group">
+            <label>Matrícula do Veículo</label>
+            <input type="text" id="driverPlate" placeholder="Ex: ABC-123-MZ" />
+          </div>
+          
+          <div class="form-group">
+            <label>Modelo do Veículo</label>
+            <input type="text" id="driverCar" placeholder="Ex: Toyota Corolla 2019" />
+          </div>
+          
+          <button class="actionBtn btn-primary" onclick="registerDriver()" style="width:100%;margin-top:24px">
+            <span>🚀</span> Começar a Conduzir
+          </button>
+        </div>
+      </div>
+      
+      <!-- DRIVER DASHBOARD -->
+      <div id="driverDashboard" style="display:none">
+        
+        <!-- Stats -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-value" id="statTrips">0</div>
+            <div class="stat-label">Viagens Hoje</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="statEarnings">0</div>
+            <div class="stat-label">Ganhos (MTN)</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="statRating">5.0</div>
+            <div class="stat-label">Avaliação</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value" id="statOnline">0h</div>
+            <div class="stat-label">Online</div>
+          </div>
+        </div>
+        
+        <!-- Active Trip -->
+        <div id="activeTripContainer"></div>
+        
+        <!-- Available Requests -->
+        <h3 class="section-title">
+          <span>📋</span> Pedidos Disponíveis
+          <span style="margin-left:auto;font-size:14px;color:var(--text-secondary);font-weight:400" id="pendingCount">(0)</span>
+        </h3>
+        
+        <div class="requests-container" id="requestsList">
+          <div class="empty-state">
+            <div class="empty-icon">📭</div>
+            <div class="empty-title">Sem pedidos disponíveis</div>
+            <p>Fique online para receber pedidos de viagem</p>
+          </div>
+        </div>
+        
+      </div>
+    </div>
+  </div>
+
+<script>
+// ==================== FIREBASE CONFIG ====================
+const firebaseConfig = {
+  apiKey: "AIzaSyB_AShautR6NyunXrIqcvV-qr3Zx666lbs",
+  authDomain: "boleia-app-6a64a.firebaseapp.com",
+  databaseURL: "https://boleia-app-6a64a-default-rtdb.firebaseio.com",
+  projectId: "boleia-app-6a64a",
+  storageBucket: "boleia-app-6a64a.firebasestorage.app",
+  messagingSenderId: "654924851219",
+  appId: "1:654924851219:web:12070c9503456c714ff7e6",
+  measurementId: "G-PMGHTF4JZN"
+};
+
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
+
+// ==================== STATE ====================
+let currentDriver = null;
+let isOnline = false;
+let soundEnabled = true;
+let activeTripsListener = null;
+let myTripListener = null;
+let currentTripId = null;
+let onlineSince = null;
+
+// ==================== UTILITIES ====================
+function showToast(message, type='info'){
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.innerHTML = `<span>${type==='success'?'✓':'ℹ'}</span> ${message}`;
+  container.appendChild(toast);
+  setTimeout(()=>{
+    toast.style.opacity = '0';
+    toast.style.transform = 'translateX(100%)';
+    setTimeout(()=>toast.remove(), 300);
+  }, 4000);
+}
+
+function playNotificationSound(){
+  if(!soundEnabled) return;
+  // Create beep sound
+  const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+  const oscillator = audioContext.createOscillator();
+  const gainNode = audioContext.createGain();
+  oscillator.connect(gainNode);
+  gainNode.connect(audioContext.destination);
+  oscillator.frequency.value = 800;
+  oscillator.type = 'sine';
+  gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+  gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+  oscillator.start(audioContext.currentTime);
+  oscillator.stop(audioContext.currentTime + 0.5);
+}
+
+function formatTime(timestamp){
+  const date = new Date(timestamp);
+  return date.toLocaleTimeString('pt-PT', {hour:'2-digit', minute:'2-digit'});
+}
+
+function timeAgo(timestamp){
+  const seconds = Math.floor((Date.now() - timestamp) / 1000);
+  if(seconds < 60) return 'Agora';
+  if(seconds < 3600) return Math.floor(seconds/60) + ' min';
+  return Math.floor(seconds/3600) + ' h';
+}
+
+// ==================== REGISTRATION ====================
+function registerDriver(){
+  const name = document.getElementById('driverName').value.trim();
+  const phone = document.getElementById('driverPhone').value.trim();
+  const plate = document.getElementById('driverPlate').value.trim();
+  const car = document.getElementById('driverCar').value.trim();
+  
+  if(!name || !phone || !plate || !car){
+    showToast('Preenche todos os campos!', 'error');
+    return;
+  }
+  
+  if(phone.length < 9){
+    showToast('Número de telefone inválido!', 'error');
+    return;
+  }
+  
+  currentDriver = {
+    id: 'driver_' + phone,
+    name: name,
+    phone: phone,
+    plate: plate,
+    car: car,
+    rating: 5.0,
+    trips: 0,
+    earnings: 0,
+    registeredAt: Date.now()
+  };
+  
+  // Save to localStorage
+  localStorage.setItem('movago_driver', JSON.stringify(currentDriver));
+  
+  // Save to Firebase
+  database.ref('drivers/' + currentDriver.id).set(currentDriver).then(()=>{
+    showDashboard();
+    showToast('Bem-vindo, ' + name + '!', 'success');
+  });
+}
+
+function checkStoredDriver(){
+  const stored = localStorage.getItem('movago_driver');
+  if(stored){
+    currentDriver = JSON.parse(stored);
+    showDashboard();
+  }
+}
+
+// ==================== DASHBOARD ====================
+function showDashboard(){
+  document.getElementById('registrationForm').style.display = 'none';
+  document.getElementById('driverDashboard').style.display = 'block';
+  document.getElementById('driverStatus').style.display = 'flex';
+  
+  // Update stats
+  updateStats();
+  
+  // Start listening for trips
+  listenForTrips();
+}
+
+function updateStats(){
+  if(!currentDriver) return;
+  document.getElementById('statTrips').textContent = currentDriver.trips || 0;
+  document.getElementById('statEarnings').textContent = (currentDriver.earnings || 0).toLocaleString();
+  document.getElementById('statRating').textContent = (currentDriver.rating || 5.0).toFixed(1);
+  
+  if(onlineSince){
+    const hours = Math.floor((Date.now() - onlineSince) / 3600000);
+    const mins = Math.floor(((Date.now() - onlineSince) % 3600000) / 60000);
+    document.getElementById('statOnline').textContent = hours + 'h ' + mins + 'm';
+  }
+}
+
+// ==================== ONLINE STATUS ====================
+function toggleOnline(){
+  if(!currentDriver) return;
+  
+  isOnline = !isOnline;
+  const toggle = document.getElementById('statusToggle');
+  const text = document.getElementById('statusText');
+  
+  if(isOnline){
+    toggle.classList.add('active');
+    text.textContent = 'Online';
+    onlineSince = Date.now();
+    
+    // Register as available driver
+    database.ref('availableDrivers/' + currentDriver.id).set({
+      ...currentDriver,
+      onlineSince: Date.now()
+    });
+    
+    showToast('Estás online! Aguardando pedidos...', 'success');
+    
+    // Update online time every minute
+    window.onlineInterval = setInterval(updateStats, 60000);
+  }else{
+    toggle.classList.remove('active');
+    text.textContent = 'Offline';
+    onlineSince = null;
+    
+    // Remove from available drivers
+    database.ref('availableDrivers/' + currentDriver.id).remove();
+    
+    showToast('Ficaste offline', 'info');
+    
+    if(window.onlineInterval) clearInterval(window.onlineInterval);
+  }
+}
+
+function toggleSound(){
+  soundEnabled = !soundEnabled;
+  const btn = document.getElementById('soundToggle');
+  btn.textContent = soundEnabled ? '🔔' : '🔕';
+  btn.classList.toggle('active', soundEnabled);
+  showToast(soundEnabled ? 'Som ativado' : 'Som desativado', 'info');
+}
+
+// ==================== TRIP MANAGEMENT ====================
+function listenForTrips(){
+  // Listen for active trips
+  activeTripsListener = database.ref('activeTrips').on('value', (snapshot)=>{
+    const trips = snapshot.val();
+    renderRequests(trips);
+  });
+  
+  // Check if driver has current trip
+  database.ref('trips').orderByChild('driverId').equalTo(currentDriver.id).on('value', (snapshot)=>{
+    const trips = snapshot.val();
+    if(trips){
+      for(const tripId in trips){
+        const trip = trips[tripId];
+        if(['accepted', 'arrived', 'driving'].includes(trip.status)){
+          currentTripId = tripId;
+          renderActiveTrip(trip);
+          return;
+        }
+      }
+    }
+    // No active trip
+    document.getElementById('activeTripContainer').innerHTML = '';
+    currentTripId = null;
+  });
+}
+
+function renderRequests(trips){
+  const container = document.getElementById('requestsList');
+  
+  if(!trips || !isOnline){
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <div class="empty-title">${isOnline ? 'Sem pedidos disponíveis' : 'Estás offline'}</div>
+        <p>${isOnline ? 'Aguarde por novos pedidos de viagem' : 'Fique online para receber pedidos'}</p>
+      </div>
+    `;
+    document.getElementById('pendingCount').textContent = '(0)';
+    return;
+  }
+  
+  // Filter only searching trips
+  const availableTrips = [];
+  for(const tripId in trips){
+    if(trips[tripId].status === 'searching'){
+      availableTrips.push({id: tripId, ...trips[tripId]});
+    }
+  }
+  
+  document.getElementById('pendingCount').textContent = '(' + availableTrips.length + ')';
+  
+  if(availableTrips.length === 0){
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <div class="empty-title">Sem pedidos disponíveis</div>
+        <p>Aguarde por novos pedidos de viagem</p>
+      </div>
+    `;
+    return;
+  }
+  
+  // Sort by time (newest first)
+  availableTrips.sort((a,b) => b.createdAt - a.createdAt);
+  
+  container.innerHTML = availableTrips.map(trip => `
+    <div class="request-card new">
+      <div class="request-header">
+        <div class="passenger-info">
+          <div class="passenger-avatar">👤</div>
+          <div class="passenger-details">
+            <h3>${trip.passengerName || 'Passageiro'}</h3>
+            <p>⭐ ${trip.passengerRating || '5.0'} • ${timeAgo(trip.createdAt)}</p>
+          </div>
+        </div>
+        <div class="request-time">${formatTime(trip.createdAt)}</div>
+      </div>
+      
+      <div class="route-display">
+        <div class="route-points">
+          <div class="route-dot pickup"></div>
+          <div class="route-line"></div>
+          <div class="route-dot dest"></div>
+        </div>
+        <div class="route-details">
+          <div class="route-item">
+            <div class="route-label">Recolha</div>
+            <div class="route-value">${trip.pickup}</div>
+          </div>
+          <div class="route-item">
+            <div class="route-label">Destino</div>
+            <div class="route-value">${trip.destination}</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="trip-info">
+        <div class="trip-stat">
+          <span class="trip-stat-icon">📏</span>
+          <span>${trip.distance} km</span>
+        </div>
+        <div class="trip-stat">
+          <span class="trip-stat-icon">⏱️</span>
+          <span>${trip.estimatedTime || Math.ceil(trip.distance * 2)} min</span>
+        </div>
+        <div class="trip-stat">
+          <span class="trip-stat-icon">💰</span>
+          <span class="trip-stat-value">${trip.price} MTN</span>
+        </div>
+      </div>
+      
+      <div class="request-actions">
+        <button class="actionBtn btn-accept" onclick="acceptTrip('${trip.id}')">
+          <span>✓</span> Aceitar Viagem
+        </button>
+        <button class="actionBtn btn-reject" onclick="rejectTrip('${trip.id}')">
+          <span>✗</span> Ignorar
+        </button>
+      </div>
+    </div>
+  `).join('');
+  
+  // Play sound for new requests
+  if(availableTrips.length > 0){
+    playNotificationSound();
+  }
+}
+
+function renderActiveTrip(trip){
+  const container = document.getElementById('activeTripContainer');
+  
+  let actionButton = '';
+  let statusText = '';
+  
+  switch(trip.status){
+    case 'accepted':
+      statusText = 'Viagem Aceite - A caminho do passageiro';
+      actionButton = `<button class="actionBtn btn-arrived" onclick="updateTripStatus('arrived')" style="width:100%;margin-top:16px"><span>📍</span> Cheguei ao Local</button>`;
+      break;
+    case 'arrived':
+      statusText = 'No local de recolha - Aguardando passageiro';
+      actionButton = `<button class="actionBtn btn-primary" onclick="updateTripStatus('driving')" style="width:100%;margin-top:16px"><span>🚗</span> Iniciar Viagem</button>`;
+      break;
+    case 'driving':
+      statusText = 'Em viagem para o destino';
+      actionButton = `<button class="actionBtn btn-complete" onclick="updateTripStatus('completed')" style="width:100%;margin-top:16px"><span>✓</span> Concluir Viagem</button>`;
+      break;
+  }
+  
+  container.innerHTML = `
+    <div class="active-trip-banner">
+      <div class="banner-content">
+        <div class="banner-title">Viagem em Progresso</div>
+        <div class="banner-text">${statusText}</div>
+        
+        <div style="display:flex;gap:16px;margin-top:16px;flex-wrap:wrap">
+          <div style="background:rgba(0,0,0,0.3);padding:12px 16px;border-radius:12px;flex:1;min-width:150px">
+            <div style="font-size:11px;opacity:0.8;margin-bottom:4px">PASSAGEIRO</div>
+            <div style="font-weight:600">${trip.passengerName}</div>
+            <div style="font-size:13px;opacity:0.8">📞 ${trip.passengerId}</div>
+          </div>
+          <div style="background:rgba(0,0,0,0.3);padding:12px 16px;border-radius:12px;flex:1;min-width:150px">
+            <div style="font-size:11px;opacity:0.8;margin-bottom:4px">DESTINO</div>
+            <div style="font-weight:600;font-size:14px">${trip.destination}</div>
+            <div style="font-size:13px;opacity:0.8">💰 ${trip.price} MTN</div>
+          </div>
+        </div>
+        
+        ${actionButton}
+        
+        <button class="actionBtn btn-reject" onclick="cancelTrip()" style="width:100%;margin-top:8px;background:rgba(255,71,87,0.3)">
+          <span>❌</span> Cancelar Viagem
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function acceptTrip(tripId){
+  if(!isOnline || !currentDriver){
+    showToast('Erro: Não estás online!', 'error');
+    return;
+  }
+  
+  // Check if already has active trip
+  if(currentTripId){
+    showToast('Já tens uma viagem em progresso!', 'error');
+    return;
+  }
+  
+  const updates = {
+    driverId: currentDriver.id,
+    driverName: currentDriver.name,
+    driverPhone: currentDriver.phone,
+    driverPlate: currentDriver.plate,
+    driverRating: currentDriver.rating,
+    status: 'accepted',
+    acceptedAt: Date.now()
+  };
+  
+  database.ref('trips/' + tripId).update(updates).then(()=>{
+    database.ref('activeTrips/' + tripId).update(updates);
+    currentTripId = tripId;
+    showToast('Viagem aceite! A caminho do passageiro.', 'success');
+  });
+}
+
+function rejectTrip(tripId){
+  // Just remove from view temporarily (driver can still see it if refreshed)
+  showToast('Pedido ignorado', 'info');
+}
+
+function updateTripStatus(status){
+  if(!currentTripId) return;
+  
+  const updates = {status: status};
+  
+  if(status === 'completed'){
+    updates.completedAt = Date.now();
+    
+    // Update driver stats
+    database.ref('trips/' + currentTripId).once('value', (snapshot)=>{
+      const trip = snapshot.val();
+      if(trip){
+        const newTrips = (currentDriver.trips || 0) + 1;
+        const newEarnings = (currentDriver.earnings || 0) + (trip.price || 0);
+        
+        database.ref('drivers/' + currentDriver.id).update({
+          trips: newTrips,
+          earnings: newEarnings
+        });
+        
+        currentDriver.trips = newTrips;
+        currentDriver.earnings = newEarnings;
+        updateStats();
+        
+        // Remove from active trips
+        database.ref('activeTrips/' + currentTripId).remove();
+        
+        showToast('Viagem concluída! +' + trip.price + ' MTN', 'success');
+        currentTripId = null;
+      }
+    });
+  }else{
+    database.ref('trips/' + currentTripId).update(updates);
+    database.ref('activeTrips/' + currentTripId).update(updates);
+    
+    const messages = {
+      'arrived': 'Chegaste ao local!',
+      'driving': 'Viagem iniciada! Bom trajeto.'
+    };
+    showToast(messages[status], 'success');
+  }
+}
+
+function cancelTrip(){
+  if(!currentTripId) return;
+  
+  if(confirm('Tens certeza que desejas cancelar esta viagem?')){
+    database.ref('trips/' + currentTripId).update({
+      status: 'searching',
+      driverId: null,
+      driverName: null,
+      driverPhone: null,
+      driverPlate: null,
+      cancelledByDriver: true,
+      cancelledAt: Date.now()
+    });
+    
+    database.ref('activeTrips/' + currentTripId).update({
+      status: 'searching',
+      driverId: null
+    });
+    
+    currentTripId = null;
+    showToast('Viagem cancelada', 'info');
+  }
+}
+
+// ==================== INITIALIZATION ====================
+checkStoredDriver();
+
+// Update stats every minute if online
+setInterval(()=>{
+  if(isOnline) updateStats();
+}, 60000);
+</script>
+</body>
+</html>'''
