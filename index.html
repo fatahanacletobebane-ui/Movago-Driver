@@ -5,284 +5,139 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>MovaGo — Console do Motorista</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
 <style>
   :root{
-    --primary:#FF6B00;
-    --primary-light:#FF8C42;
-    --secondary:#FFD700;
-    --accent:#00C853;
-    --danger:#ff4757;
-    --info:#3498db;
-    --purple:#9c27b0;
-    --dark:#0a0a0a;
-    --card-bg:rgba(255,255,255,0.03);
-    --glass: rgba(255,255,255,0.06);
-    --text-primary:#ffffff;
-    --text-secondary:#a0a0a0;
-    --gradient-hero: linear-gradient(135deg, #FF6B00 0%, #FFD700 50%, #FF8C42 100%);
-    --gradient-bg: linear-gradient(180deg, #0a0a0a 0%, #1a1a2e 50%, #0f0f23 100%);
+    --primary:#FF6B00;--primary-light:#FF8C42;--secondary:#FFD700;--accent:#00C853;
+    --danger:#ff4757;--info:#3498db;--purple:#9c27b0;--dark:#0a0a0a;
+    --card-bg:rgba(255,255,255,0.03);--glass:rgba(255,255,255,0.06);
+    --text-primary:#ffffff;--text-secondary:#a0a0a0;
+    --gradient-hero:linear-gradient(135deg,#FF6B00 0%,#FFD700 50%,#FF8C42 100%);
+    --gradient-bg:linear-gradient(180deg,#0a0a0a 0%,#1a1a2e 50%,#0f0f23 100%);
   }
-  
   *{box-sizing:border-box;font-family:'Poppins',system-ui,sans-serif;margin:0;padding:0}
+  body{margin:0;min-height:100vh;background:var(--gradient-bg);color:var(--text-primary)}
+  .app{max-width:900px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column}
   
-  body{
-    margin:0; min-height:100vh;
-    background: var(--gradient-bg);
-    color:var(--text-primary);
-    overflow-x:hidden;
-  }
-  
-  .app{
-    max-width:900px;margin:0 auto;
-    min-height:100vh;
-    display:flex;
-    flex-direction:column;
-  }
-  
-  /* Header */
-  .header{
-    display:flex;justify-content:space-between;align-items:center;
-    padding:20px;
-    background:linear-gradient(180deg, rgba(255,107,0,0.1) 0%, transparent 100%);
-    border-bottom:1px solid rgba(255,255,255,0.05);
-    position:sticky;top:0;z-index:100;backdrop-filter:blur(10px);
-  }
-  
+  .header{display:flex;justify-content:space-between;align-items:center;padding:20px;background:linear-gradient(180deg,rgba(255,107,0,0.1) 0%,transparent 100%);border-bottom:1px solid rgba(255,255,255,0.05);position:sticky;top:0;z-index:100;backdrop-filter:blur(10px)}
   .logo-container{display:flex;align-items:center;gap:12px}
-  .logo-icon{
-    width:44px;height:44px;border-radius:12px;
-    background:var(--gradient-hero);
-    display:flex;align-items:center;justify-content:center;
-    box-shadow:0 8px 32px rgba(255,107,0,0.3);
-    font-size:22px;
-  }
-  .logo-text h1{
-    font-size:24px;font-weight:800;
-    background:var(--gradient-hero);
-    -webkit-background-clip:text;
-    -webkit-text-fill-color:transparent;
-    background-clip:text;
-    margin:0;
-  }
+  .logo-icon{width:44px;height:44px;border-radius:12px;background:var(--gradient-hero);display:flex;align-items:center;justify-content:center;box-shadow:0 8px 32px rgba(255,107,0,0.3);font-size:22px}
+  .logo-text h1{font-size:24px;font-weight:800;background:var(--gradient-hero);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;margin:0}
   .logo-text span{font-size:10px;color:var(--text-secondary);font-weight:500;letter-spacing:1px;text-transform:uppercase}
   
-  .driver-status{
-    display:flex;align-items:center;gap:12px;
-  }
-  
-  .status-toggle{
-    display:flex;align-items:center;gap:8px;
-    background:var(--glass);padding:8px 16px;border-radius:20px;
-    border:1px solid rgba(255,255,255,0.1);cursor:pointer;
-    transition:all 0.3s;
-  }
+  .driver-status{display:flex;align-items:center;gap:12px}
+  .status-toggle{display:flex;align-items:center;gap:8px;background:var(--glass);padding:8px 16px;border-radius:20px;border:1px solid rgba(255,255,255,0.1);cursor:pointer;transition:all 0.3s}
   .status-toggle:hover{background:rgba(255,255,255,0.1)}
   .status-toggle.active{background:rgba(0,200,83,0.2);border-color:var(--accent)}
-  
-  .status-dot{
-    width:10px;height:10px;border-radius:50%;background:var(--text-secondary);
-    transition:all 0.3s;
-  }
+  .status-dot{width:10px;height:10px;border-radius:50%;background:var(--text-secondary);transition:all 0.3s}
   .status-toggle.active .status-dot{background:var(--accent);box-shadow:0 0 10px var(--accent)}
   
-  /* Main Content */
   .content{padding:20px;flex:1}
+  .section{display:none}.section.active{display:block;animation:fadeIn 0.4s ease}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
   
-  /* Stats Cards */
-  .stats-grid{
-    display:grid;grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));gap:16px;margin-bottom:24px;
-  }
-  .stat-card{
-    background:var(--glass);padding:20px;border-radius:16px;text-align:center;
-    border:1px solid rgba(255,255,255,0.05);
-  }
+  .login-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:80vh;text-align:center;padding:20px}
+  .login-icon{width:100px;height:100px;border-radius:50%;background:var(--gradient-hero);display:flex;align-items:center;justify-content:center;margin-bottom:24px;box-shadow:0 20px 60px rgba(255,107,0,0.3);font-size:50px;animation:pulse-glow 2s infinite}
+  @keyframes pulse-glow{0%,100%{box-shadow:0 20px 60px rgba(255,107,0,0.3)}50%{box-shadow:0 20px 80px rgba(255,107,0,0.5)}}
+  .login-screen h2{margin-bottom:8px}.login-screen p{color:var(--text-secondary);margin-bottom:32px;font-size:14px}
+  
+  .formGroup{margin-bottom:20px;width:100%;max-width:400px;text-align:left}
+  .formGroup label{display:block;margin-bottom:8px;font-size:13px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px}
+  .formGroup input{width:100%;padding:14px 16px;font-size:15px;color:#fff;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:12px;outline:none;transition:all 0.3s}
+  .formGroup input:focus{border-color:var(--primary);background:rgba(255,107,0,0.05);box-shadow:0 0 0 4px rgba(255,107,0,0.1)}
+  
+  .stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;margin-bottom:24px}
+  .stat-card{background:var(--glass);padding:20px;border-radius:16px;text-align:center;border:1px solid rgba(255,255,255,0.05)}
   .stat-value{font-size:32px;font-weight:700;color:var(--primary);margin-bottom:4px}
   .stat-label{font-size:12px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px}
   
-  /* Sections */
-  .section-title{
-    font-size:18px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px;
-  }
+  .active-trip-banner{background:var(--gradient-hero);border-radius:20px;padding:20px;margin-bottom:24px;position:relative;overflow:hidden}
+  .active-trip-banner::before{content:"";position:absolute;inset:0;background:linear-gradient(45deg,transparent 30%,rgba(255,255,255,0.1) 50%,transparent 70%);animation:shimmer 3s infinite}
+  @keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+  .banner-content{position:relative;z-index:1}
+  .banner-title{font-size:14px;opacity:0.9;margin-bottom:4px;text-transform:uppercase;letter-spacing:1px}
+  .banner-text{font-size:18px;font-weight:700}
+  .banner-actions{display:flex;gap:12px;margin-top:16px;flex-wrap:wrap}
   
-  /* Request Cards */
   .requests-container{display:flex;flex-direction:column;gap:16px}
-  
-  .request-card{
-    background:var(--glass);border-radius:20px;padding:20px;
-    border:1px solid rgba(255,255,255,0.05);
-    transition:all 0.3s;position:relative;overflow:hidden;
-  }
-  .request-card:hover{transform:translateY(-2px);box-shadow:0 10px40px rgba(0,0,0,0.3)}
+  .request-card{background:var(--glass);border-radius:20px;padding:20px;border:1px solid rgba(255,255,255,0.05);transition:all 0.3s;position:relative;overflow:hidden}
+  .request-card:hover{transform:translateY(-2px);box-shadow:0 10px 40px rgba(0,0,0,0.3)}
   .request-card.new{border-left:4px solid var(--primary);animation:pulse-border 2s infinite}
-  @keyframes pulse-border{
-    0%,100%{border-left-color:var(--primary)}
-    50%{border-left-color:var(--secondary)}
-  }
+  @keyframes pulse-border{0%,100%{border-left-color:var(--primary)}50%{border-left-color:var(--secondary)}}
   
-  .request-header{
-    display:flex;justify-content:space-between;align-items:start;margin-bottom:16px;
-  }
-  
+  .request-header{display:flex;justify-content:space-between;align-items:start;margin-bottom:16px}
   .passenger-info{display:flex;align-items:center;gap:12px}
-  .passenger-avatar{
-    width:48px;height:48px;border-radius:50%;
-    background:var(--gradient-hero);display:flex;align-items:center;justify-content:center;
-    font-size:20px;font-weight:700;
-  }
+  .passenger-avatar{width:48px;height:48px;border-radius:50%;background:var(--gradient-hero);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700}
   .passenger-details h3{margin:0;font-size:16px;margin-bottom:2px}
   .passenger-details p{margin:0;font-size:13px;color:var(--text-secondary)}
-  
   .request-time{font-size:12px;color:var(--text-secondary)}
   
-  .route-display{
-    display:flex;align-items:center;gap:16px;margin:16px 0;padding:16px;
-    background:rgba(0,0,0,0.2);border-radius:12px;
-  }
-  
+  .route-display{display:flex;align-items:center;gap:16px;margin:16px 0;padding:16px;background:rgba(0,0,0,0.2);border-radius:12px}
   .route-points{display:flex;flex-direction:column;gap:8px;align-items:center}
   .route-dot{width:12px;height:12px;border-radius:50%}
   .route-dot.pickup{background:var(--primary);box-shadow:0 0 10px var(--primary)}
   .route-dot.dest{background:var(--secondary);box-shadow:0 0 10px var(--secondary)}
-  .route-line{width:2px;height:30px;background:linear-gradient(180deg, var(--primary), var(--secondary))}
-  
+  .route-line{width:2px;height:30px;background:linear-gradient(180deg,var(--primary),var(--secondary))}
   .route-details{flex:1}
-  .route-item{margin-bottom:12px}
-  .route-item:last-child{margin-bottom:0}
+  .route-item{margin-bottom:12px}.route-item:last-child{margin-bottom:0}
   .route-label{font-size:11px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px}
   .route-value{font-size:14px;font-weight:500}
   
-  .trip-info{
-    display:flex;gap:16px;margin-top:16px;padding-top:16px;
-    border-top:1px solid rgba(255,255,255,0.05);
-  }
+  .trip-info{display:flex;gap:16px;margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.05)}
   .trip-stat{display:flex;align-items:center;gap:6px;font-size:14px}
-  .trip-stat-icon{font-size:16px}
   .trip-stat-value{font-weight:600;color:var(--secondary)}
   
-  .request-actions{
-    display:flex;gap:12px;margin-top:20px;
-  }
-  
-  .actionBtn{
-    flex:1;padding:14px;border:none;border-radius:12px;cursor:pointer;
-    font-size:14px;font-weight:600;transition:all 0.3s;
-    display:flex;align-items:center;justify-content:center;gap:8px;
-  }
+  .request-actions{display:flex;gap:12px;margin-top:20px}
+  .actionBtn{flex:1;padding:14px;border:none;border-radius:12px;cursor:pointer;font-size:14px;font-weight:600;transition:all 0.3s;display:flex;align-items:center;justify-content:center;gap:8px}
   .actionBtn:hover:not(:disabled){transform:translateY(-2px)}
   .actionBtn:disabled{opacity:0.5;cursor:not-allowed}
-  
-  .btn-accept{
-    background:linear-gradient(135deg, var(--accent) 0%, #00e676 100%);
-    color:#fff;box-shadow:0 4px 16px rgba(0,200,83,0.3);
-  }
+  .btn-accept{background:linear-gradient(135deg,var(--accent) 0%,#00e676 100%);color:#fff;box-shadow:0 4px 16px rgba(0,200,83,0.3)}
   .btn-accept:hover{box-shadow:0 6px 24px rgba(0,200,83,0.4)}
-  
-  .btn-reject{
-    background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.1);
-  }
+  .btn-reject{background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.1)}
   .btn-reject:hover{background:rgba(255,71,87,0.2);border-color:var(--danger)}
+  .btn-primary{background:linear-gradient(135deg,var(--primary) 0%,var(--primary-light) 100%);color:#fff}
+  .btn-arrived{background:linear-gradient(135deg,var(--purple) 0%,#ce93d8 100%);color:#fff}
+  .btn-complete{background:linear-gradient(135deg,var(--info) 0%,#64b5f6 100%);color:#fff}
+  .btn-danger{background:linear-gradient(135deg,var(--danger) 0%,#ff6b81 100%);color:#fff}
+  .btn-secondary{background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.1)}
   
-  .btn-primary{
-    background:linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
-    color:#fff;box-shadow:0 4px 16px rgba(255,107,0,0.3);
-  }
+  .profile-card{background:var(--glass);border-radius:20px;padding:24px;margin-bottom:24px;border:1px solid rgba(255,255,255,0.05)}
+  .profile-header{display:flex;align-items:center;gap:16px;margin-bottom:20px}
+  .profile-avatar-large{width:80px;height:80px;border-radius:50%;background:var(--gradient-hero);display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:700;box-shadow:0 8px 32px rgba(255,107,0,0.3)}
+  .profile-info h3{margin:0;font-size:20px;margin-bottom:4px}
+  .profile-info p{margin:0;color:var(--text-secondary);font-size:14px}
+  .car-info{background:rgba(0,0,0,0.2);padding:16px;border-radius:12px;margin-top:16px}
+  .car-info-row{display:flex;justify-content:space-between;margin-bottom:8px}.car-info-row:last-child{margin-bottom:0}
+  .car-label{color:var(--text-secondary);font-size:13px}.car-value{font-weight:600}
   
-  .btn-arrived{
-    background:linear-gradient(135deg, var(--purple) 0%, #ce93d8 100%);
-    color:#fff;box-shadow:0 4px 16px rgba(156,39,176,0.3);
-  }
-  
-  .btn-complete{
-    background:linear-gradient(135deg, var(--info) 0%, #64b5f6 100%);
-    color:#fff;box-shadow:0 4px 16px rgba(33,150,243,0.3);
-  }
-  
-  /* Active Trip Banner */
-  .active-trip-banner{
-    background:var(--gradient-hero);border-radius:20px;padding:20px;margin-bottom:24px;
-    position:relative;overflow:hidden;
-  }
-  .active-trip-banner::before{
-    content:"";position:absolute;inset:0;
-    background:linear-gradient(45deg, transparent 30%, rgba(255,255,255,0.1) 50%, transparent 70%);
-    animation:shimmer 3s infinite;
-  }
-  @keyframes shimmer{
-    0%{transform:translateX(-100%)}
-    100%{transform:translateX(100%)}
-  }
-  
-  .banner-content{position:relative;z-index:1}
-  .banner-title{font-size:14px;opacity:0.9;margin-bottom:4px;text-transform:uppercase;letter-spacing:1px}
-  .banner-text{font-size:18px;font-weight:700}
-  
-  /* Empty State */
-  .empty-state{
-    text-align:center;padding:60px 20px;color:var(--text-secondary);
-  }
+  .empty-state{text-align:center;padding:60px 20px;color:var(--text-secondary)}
   .empty-icon{font-size:64px;margin-bottom:16px;opacity:0.5}
   .empty-title{font-size:18px;font-weight:600;color:var(--text-primary);margin-bottom:8px}
   
-  /* Driver Form */
-  .driver-form{
-    max-width:400px;margin:0 auto;padding:40px 20px;
-  }
-  .form-group{margin-bottom:20px}
-  .form-group label{display:block;margin-bottom:8px;font-size:13px;color:var(--text-secondary);text-transform:uppercase;letter-spacing:0.5px}
-  .form-group input{
-    width:100%;padding:14px 16px;font-size:15px;color:#fff;
-    background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);
-    border-radius:12px;outline:none;transition:all 0.3s;
-  }
-  .form-group input:focus{
-    border-color:var(--primary);background:rgba(255,107,0,0.05);
-    box-shadow:0 0 0 4px rgba(255,107,0,0.1);
-  }
+  .toast-container{position:fixed;top:20px;right:20px;z-index:10000;display:flex;flex-direction:column;gap:8px}
+  .toast{background:rgba(30,30,40,0.95);color:#fff;padding:16px 20px;border-radius:12px;font-size:14px;font-weight:500;backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.1);box-shadow:0 10px 40px rgba(0,0,0,0.3);display:flex;align-items:center;gap:10px;animation:toast-in 0.3s ease;min-width:280px;border-left:4px solid var(--primary)}
+  @keyframes toast-in{from{opacity:0;transform:translateX(100%)}to{opacity:1;transform:translateX(0)}}
+  .toast.success{border-left-color:var(--accent)}
   
-  /* Toast Notifications */
-  .toast-container{
-    position:fixed;top:20px;right:20px;z-index:10000;
-    display:flex;flex-direction:column;gap:8px;
-  }
-  .toast{
-    background:rgba(30,30,40,0.95);color:#fff;padding:16px 20px;border-radius:12px;
-    font-size:14px;font-weight:500;backdrop-filter:blur(10px);
-    border:1px solid rgba(255,255,255,0.1);box-shadow:0 10px 40px rgba(0,0,0,0.3);
-    display:flex;align-items:center;gap:10px;
-    animation:toast-in 0.3s ease;min-width:280px;
-    border-left:4px solid var(--primary);
-  }
-  @keyframes toast-in{
-    from{opacity:0;transform:translateX(100%)}
-    to{opacity:1;transform:translateX(0)}
-  }
+  .tabs{display:flex;gap:8px;margin-bottom:20px;background:var(--glass);padding:4px;border-radius:12px}
+  .tab{flex:1;padding:12px;border:none;border-radius:8px;background:transparent;color:var(--text-secondary);font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s}
+  .tab.active{background:var(--primary);color:#fff}
   
-  /* Sound Toggle */
-  .sound-toggle{
-    background:var(--glass);border:none;color:var(--text-secondary);
-    width:40px;height:40px;border-radius:50%;cursor:pointer;
-    display:flex;align-items:center;justify-content:center;font-size:18px;
-    transition:all 0.3s;border:1px solid rgba(255,255,255,0.1);
-  }
+  .earnings-card{background:var(--gradient-hero);border-radius:20px;padding:24px;margin-bottom:24px;position:relative;overflow:hidden}
+  .earnings-card::before{content:"";position:absolute;inset:0;background:linear-gradient(45deg,transparent 30%,rgba(255,255,255,0.1) 50%,transparent 70%);animation:shimmer 3s infinite}
+  .earnings-label{position:relative;z-index:1;font-size:12px;text-transform:uppercase;letter-spacing:1px;opacity:0.9;margin-bottom:8px}
+  .earnings-value{position:relative;z-index:1;font-size:42px;font-weight:800;text-shadow:0 4px 20px rgba(0,0,0,0.3)}
+  
+  .sound-toggle{background:var(--glass);border:none;color:var(--text-secondary);width:40px;height:40px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;transition:all 0.3s;border:1px solid rgba(255,255,255,0.1)}
   .sound-toggle:hover{color:var(--primary);background:rgba(255,107,0,0.1)}
   .sound-toggle.active{color:var(--primary)}
-  
-  /* Responsive */
-  @media(max-width:600px){
-    .stats-grid{grid-template-columns:repeat(2, 1fr)}
-    .request-actions{flex-direction:column}
-    .trip-info{flex-wrap:wrap}
-  }
 </style>
 </head>
 <body>
   <div class="toast-container" id="toastContainer"></div>
   
   <div class="app">
-    <!-- Header -->
     <div class="header">
       <div class="logo-container">
         <div class="logo-icon">🚗</div>
@@ -292,7 +147,7 @@
         </div>
       </div>
       <div class="driver-status" id="driverStatus" style="display:none">
-        <button class="sound-toggle" id="soundToggle" onclick="toggleSound()">🔔</button>
+        <button class="sound-toggle active" id="soundToggle" onclick="toggleSound()">🔔</button>
         <div class="status-toggle" id="statusToggle" onclick="toggleOnline()">
           <div class="status-dot"></div>
           <span id="statusText">Offline</span>
@@ -302,61 +157,115 @@
     
     <div class="content" id="mainContent">
       
-      <!-- DRIVER REGISTRATION -->
-      <div id="registrationForm">
-        <div class="driver-form">
-          <div style="text-align:center;margin-bottom:32px">
-            <div style="font-size:64px;margin-bottom:16px">👤</div>
-            <h2 style="margin-bottom:8px">Registo de Motorista</h2>
-            <p style="color:var(--text-secondary);font-size:14px">Complete os seus dados para começar</p>
+      <!-- LOGIN / REGISTER -->
+      <div class="section active" id="authSection">
+        <div class="login-screen">
+          <div class="login-icon">🚕</div>
+          <h2>Área do Motorista</h2>
+          <p>Entre ou registe-se para começar a conduzir</p>
+          
+          <div class="tabs">
+            <button class="tab active" onclick="showAuthTab('login')" id="tab-login">Entrar</button>
+            <button class="tab" onclick="showAuthTab('register')" id="tab-register">Registar</button>
           </div>
           
-          <div class="form-group">
-            <label>Nome Completo</label>
-            <input type="text" id="driverName" placeholder="Ex: João Silva" />
+          <!-- Login Form -->
+          <div id="loginForm">
+            <div class="formGroup">
+              <label>📱 Número de Telefone</label>
+              <input type="tel" id="loginPhone" placeholder="84XXXXXXX" maxlength="9" />
+            </div>
+            <div class="formGroup">
+              <label>🔒 PIN (4 dígitos)</label>
+              <input type="password" id="loginPin" placeholder="****" maxlength="4" />
+            </div>
+            <button class="actionBtn btn-primary" onclick="login()" style="max-width:400px;width:100%">
+              <span>🚀</span> Entrar
+            </button>
           </div>
           
-          <div class="form-group">
-            <label>Número de Telefone</label>
-            <input type="tel" id="driverPhone" placeholder="84XXXXXXX" maxlength="9" />
+          <!-- Register Form -->
+          <div id="registerForm" style="display:none">
+            <div class="formGroup">
+              <label>👤 Nome Completo</label>
+              <input type="text" id="regName" placeholder="Seu nome completo" />
+            </div>
+            <div class="formGroup">
+              <label>📱 Número de Telefone</label>
+              <input type="tel" id="regPhone" placeholder="84XXXXXXX" maxlength="9" />
+            </div>
+            <div class="formGroup">
+              <label>🔒 Criar PIN (4 dígitos)</label>
+              <input type="password" id="regPin" placeholder="****" maxlength="4" />
+            </div>
+            <div class="formGroup">
+              <label>🚗 Matrícula do Veículo</label>
+              <input type="text" id="regPlate" placeholder="ABC-123-MZ" />
+            </div>
+            <div class="formGroup">
+              <label>🚙 Modelo do Veículo</label>
+              <input type="text" id="regCar" placeholder="Toyota Corolla 2019" />
+            </div>
+            <button class="actionBtn btn-primary" onclick="register()" style="max-width:400px;width:100%">
+              <span>✓</span> Criar Conta
+            </button>
           </div>
-          
-          <div class="form-group">
-            <label>Matrícula do Veículo</label>
-            <input type="text" id="driverPlate" placeholder="Ex: ABC-123-MZ" />
-          </div>
-          
-          <div class="form-group">
-            <label>Modelo do Veículo</label>
-            <input type="text" id="driverCar" placeholder="Ex: Toyota Corolla 2019" />
-          </div>
-          
-          <button class="actionBtn btn-primary" onclick="registerDriver()" style="width:100%;margin-top:24px">
-            <span>🚀</span> Começar a Conduzir
-          </button>
         </div>
       </div>
       
-      <!-- DRIVER DASHBOARD -->
-      <div id="driverDashboard" style="display:none">
+      <!-- DASHBOARD -->
+      <div class="section" id="dashboardSection">
+        
+        <!-- Profile Card -->
+        <div class="profile-card">
+          <div class="profile-header">
+            <div class="profile-avatar-large" id="dashAvatar">👤</div>
+            <div class="profile-info">
+              <h3 id="dashName">Motorista</h3>
+              <p id="dashPhone">84XXXXXXX</p>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:4px">
+                <span style="color:var(--secondary)">⭐ <span id="dashRating">5.0</span></span>
+                <span style="color:var(--text-secondary)">• <span id="dashTrips">0</span> viagens</span>
+              </div>
+            </div>
+          </div>
+          <div class="car-info">
+            <div class="car-info-row">
+              <span class="car-label">Matrícula</span>
+              <span class="car-value" id="dashPlate">---</span>
+            </div>
+            <div class="car-info-row">
+              <span class="car-label">Veículo</span>
+              <span class="car-value" id="dashCar">---</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Earnings -->
+        <div class="earnings-card">
+          <div class="earnings-label">Ganhos Totais</div>
+          <div class="earnings-value">
+            <span id="totalEarnings">0</span> MTN
+          </div>
+        </div>
         
         <!-- Stats -->
         <div class="stats-grid">
           <div class="stat-card">
-            <div class="stat-value" id="statTrips">0</div>
+            <div class="stat-value" id="todayTrips">0</div>
             <div class="stat-label">Viagens Hoje</div>
           </div>
           <div class="stat-card">
-            <div class="stat-value" id="statEarnings">0</div>
-            <div class="stat-label">Ganhos (MTN)</div>
+            <div class="stat-value" id="todayEarnings">0</div>
+            <div class="stat-label">Ganhos Hoje</div>
           </div>
           <div class="stat-card">
-            <div class="stat-value" id="statRating">5.0</div>
-            <div class="stat-label">Avaliação</div>
+            <div class="stat-value" id="onlineHours">0h</div>
+            <div class="stat-label">Tempo Online</div>
           </div>
           <div class="stat-card">
-            <div class="stat-value" id="statOnline">0h</div>
-            <div class="stat-label">Online</div>
+            <div class="stat-value" id="acceptanceRate">100%</div>
+            <div class="stat-label">Aceitação</div>
           </div>
         </div>
         
@@ -364,7 +273,7 @@
         <div id="activeTripContainer"></div>
         
         <!-- Available Requests -->
-        <h3 class="section-title">
+        <h3 style="margin-bottom:16px;display:flex;align-items:center;gap:8px">
           <span>📋</span> Pedidos Disponíveis
           <span style="margin-left:auto;font-size:14px;color:var(--text-secondary);font-weight:400" id="pendingCount">(0)</span>
         </h3>
@@ -372,17 +281,21 @@
         <div class="requests-container" id="requestsList">
           <div class="empty-state">
             <div class="empty-icon">📭</div>
-            <div class="empty-title">Sem pedidos disponíveis</div>
-            <p>Fique online para receber pedidos de viagem</p>
+            <div class="empty-title">Sem pedidos</div>
+            <p>Fique online para receber pedidos</p>
           </div>
         </div>
         
+        <button class="actionBtn btn-secondary" onclick="logout()" style="margin-top:24px">
+          <span>🚪</span> Sair da Conta
+        </button>
       </div>
+      
     </div>
   </div>
 
 <script>
-// ==================== FIREBASE CONFIG ====================
+// FIREBASE CONFIG
 const firebaseConfig = {
   apiKey: "AIzaSyB_AShautR6NyunXrIqcvV-qr3Zx666lbs",
   authDomain: "boleia-app-6a64a.firebaseapp.com",
@@ -390,138 +303,161 @@ const firebaseConfig = {
   projectId: "boleia-app-6a64a",
   storageBucket: "boleia-app-6a64a.firebasestorage.app",
   messagingSenderId: "654924851219",
-  appId: "1:654924851219:web:12070c9503456c714ff7e6",
-  measurementId: "G-PMGHTF4JZN"
+  appId: "1:654924851219:web:12070c9503456c714ff7e6"
 };
 
 firebase.initializeApp(firebaseConfig);
-const database = firebase.database();
+const db = firebase.database();
 
-// ==================== STATE ====================
+// STATE
 let currentDriver = null;
 let isOnline = false;
 let soundEnabled = true;
-let activeTripsListener = null;
-let myTripListener = null;
 let currentTripId = null;
 let onlineSince = null;
 
-// ==================== UTILITIES ====================
-function showToast(message, type='info'){
+// UTILITIES
+function showToast(msg,type='info'){
   const container = document.getElementById('toastContainer');
   const toast = document.createElement('div');
-  toast.className = 'toast';
-  toast.innerHTML = `<span>${type==='success'?'✓':'ℹ'}</span> ${message}`;
+  toast.className = 'toast ' + (type==='success'?'success':'');
+  toast.innerHTML = '<span>' + (type==='success'?'✓':'ℹ') + '</span> ' + msg;
   container.appendChild(toast);
-  setTimeout(()=>{
-    toast.style.opacity = '0';
-    toast.style.transform = 'translateX(100%)';
-    setTimeout(()=>toast.remove(), 300);
-  }, 4000);
+  setTimeout(()=>toast.remove(), 4000);
+}
+
+function showSection(id){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
 }
 
 function playNotificationSound(){
   if(!soundEnabled) return;
-  // Create beep sound
-  const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-  const oscillator = audioContext.createOscillator();
-  const gainNode = audioContext.createGain();
-  oscillator.connect(gainNode);
-  gainNode.connect(audioContext.destination);
-  oscillator.frequency.value = 800;
-  oscillator.type = 'sine';
-  gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-  gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-  oscillator.start(audioContext.currentTime);
-  oscillator.stop(audioContext.currentTime + 0.5);
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.frequency.value = 800;
+    osc.type = 'sine';
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.5);
+  } catch(e) {}
 }
 
-function formatTime(timestamp){
-  const date = new Date(timestamp);
-  return date.toLocaleTimeString('pt-PT', {hour:'2-digit', minute:'2-digit'});
+// AUTH
+function showAuthTab(tab){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.getElementById('loginForm').style.display = tab==='login'?'block':'none';
+  document.getElementById('registerForm').style.display = tab==='register'?'block':'none';
 }
 
-function timeAgo(timestamp){
-  const seconds = Math.floor((Date.now() - timestamp) / 1000);
-  if(seconds < 60) return 'Agora';
-  if(seconds < 3600) return Math.floor(seconds/60) + ' min';
-  return Math.floor(seconds/3600) + ' h';
-}
-
-// ==================== REGISTRATION ====================
-function registerDriver(){
-  const name = document.getElementById('driverName').value.trim();
-  const phone = document.getElementById('driverPhone').value.trim();
-  const plate = document.getElementById('driverPlate').value.trim();
-  const car = document.getElementById('driverCar').value.trim();
-  
-  if(!name || !phone || !plate || !car){
-    showToast('Preenche todos os campos!', 'error');
-    return;
-  }
-  
-  if(phone.length < 9){
-    showToast('Número de telefone inválido!', 'error');
-    return;
-  }
-  
-  currentDriver = {
-    id: 'driver_' + phone,
-    name: name,
-    phone: phone,
-    plate: plate,
-    car: car,
-    rating: 5.0,
-    trips: 0,
-    earnings: 0,
-    registeredAt: Date.now()
-  };
-  
-  // Save to localStorage
-  localStorage.setItem('movago_driver', JSON.stringify(currentDriver));
-  
-  // Save to Firebase
-  database.ref('drivers/' + currentDriver.id).set(currentDriver).then(()=>{
+function checkStoredLogin(){
+  const driver = localStorage.getItem('movago_driver');
+  if(driver){
+    currentDriver = JSON.parse(driver);
     showDashboard();
-    showToast('Bem-vindo, ' + name + '!', 'success');
+  }
+}
+
+function login(){
+  const phone = document.getElementById('loginPhone').value.trim();
+  const pin = document.getElementById('loginPin').value.trim();
+  
+  if(!phone || phone.length<9){ showToast('Telefone inválido','error'); return; }
+  if(!pin || pin.length!==4){ showToast('PIN inválido','error'); return; }
+  
+  const driverId = 'driver_'+phone;
+  db.ref('drivers/'+driverId).once('value').then(snap=>{
+    if(snap.exists()){
+      const driver = snap.val();
+      if(driver.pin === pin){
+        currentDriver = driver;
+        localStorage.setItem('movago_driver', JSON.stringify(driver));
+        showDashboard();
+        showToast('Bem-vindo, '+driver.name+'!','success');
+      }else{
+        showToast('PIN incorreto','error');
+      }
+    }else{
+      showToast('Conta não encontrada. Registe-se primeiro.','error');
+      showAuthTab('register');
+      document.getElementById('regPhone').value = phone;
+    }
   });
 }
 
-function checkStoredDriver(){
-  const stored = localStorage.getItem('movago_driver');
-  if(stored){
-    currentDriver = JSON.parse(stored);
-    showDashboard();
+function register(){
+  const name = document.getElementById('regName').value.trim();
+  const phone = document.getElementById('regPhone').value.trim();
+  const pin = document.getElementById('regPin').value.trim();
+  const plate = document.getElementById('regPlate').value.trim();
+  const car = document.getElementById('regCar').value.trim();
+  
+  if(!name || !phone || !pin || !plate || !car){
+    showToast('Preenche todos os campos','error');
+    return;
   }
+  if(phone.length<9){ showToast('Telefone inválido','error'); return; }
+  if(pin.length!==4){ showToast('PIN deve ter 4 dígitos','error'); return; }
+  
+  const driverId = 'driver_'+phone;
+  const driverData = {
+    id: driverId,
+    phone: phone,
+    pin: pin,
+    name: name,
+    plate: plate,
+    carModel: car,
+    rating: 5.0,
+    totalTrips: 0,
+    totalEarnings: 0,
+    status: 'offline',
+    createdAt: Date.now(),
+    lastLogin: Date.now()
+  };
+  
+  db.ref('drivers/'+driverId).set(driverData).then(()=>{
+    currentDriver = driverData;
+    localStorage.setItem('movago_driver', JSON.stringify(driverData));
+    showDashboard();
+    showToast('Conta criada com sucesso!','success');
+  });
 }
 
-// ==================== DASHBOARD ====================
+function logout(){
+  if(isOnline) toggleOnline();
+  localStorage.removeItem('movago_driver');
+  currentDriver = null;
+  location.reload();
+}
+
+// DASHBOARD
 function showDashboard(){
-  document.getElementById('registrationForm').style.display = 'none';
-  document.getElementById('driverDashboard').style.display = 'block';
+  showSection('dashboardSection');
   document.getElementById('driverStatus').style.display = 'flex';
-  
-  // Update stats
-  updateStats();
-  
-  // Start listening for trips
+  updateDriverUI();
   listenForTrips();
 }
 
-function updateStats(){
+function updateDriverUI(){
   if(!currentDriver) return;
-  document.getElementById('statTrips').textContent = currentDriver.trips || 0;
-  document.getElementById('statEarnings').textContent = (currentDriver.earnings || 0).toLocaleString();
-  document.getElementById('statRating').textContent = (currentDriver.rating || 5.0).toFixed(1);
-  
-  if(onlineSince){
-    const hours = Math.floor((Date.now() - onlineSince) / 3600000);
-    const mins = Math.floor(((Date.now() - onlineSince) % 3600000) / 60000);
-    document.getElementById('statOnline').textContent = hours + 'h ' + mins + 'm';
-  }
+  document.getElementById('dashAvatar').textContent = currentDriver.name.charAt(0).toUpperCase();
+  document.getElementById('dashName').textContent = currentDriver.name;
+  document.getElementById('dashPhone').textContent = currentDriver.phone;
+  document.getElementById('dashRating').textContent = (currentDriver.rating || 5).toFixed(1);
+  document.getElementById('dashTrips').textContent = currentDriver.totalTrips || 0;
+  document.getElementById('dashPlate').textContent = currentDriver.plate;
+  document.getElementById('dashCar').textContent = currentDriver.carModel;
+  document.getElementById('totalEarnings').textContent = (currentDriver.totalEarnings || 0).toLocaleString();
 }
 
-// ==================== ONLINE STATUS ====================
+// ONLINE STATUS
 function toggleOnline(){
   if(!currentDriver) return;
   
@@ -534,28 +470,31 @@ function toggleOnline(){
     text.textContent = 'Online';
     onlineSince = Date.now();
     
-    // Register as available driver
-    database.ref('availableDrivers/' + currentDriver.id).set({
+    db.ref('availableDrivers/'+currentDriver.id).set({
       ...currentDriver,
       onlineSince: Date.now()
     });
     
-    showToast('Estás online! Aguardando pedidos...', 'success');
+    if(navigator.geolocation){
+      navigator.geolocation.watchPosition(pos=>{
+        db.ref('availableDrivers/'+currentDriver.id).update({
+          lat: pos.coords.latitude,
+          lon: pos.coords.longitude,
+          lastLocationUpdate: Date.now()
+        });
+      });
+    }
     
-    // Update online time every minute
-    window.onlineInterval = setInterval(updateStats, 60000);
+    showToast('Estás online!','success');
   }else{
     toggle.classList.remove('active');
     text.textContent = 'Offline';
     onlineSince = null;
-    
-    // Remove from available drivers
-    database.ref('availableDrivers/' + currentDriver.id).remove();
-    
-    showToast('Ficaste offline', 'info');
-    
-    if(window.onlineInterval) clearInterval(window.onlineInterval);
+    db.ref('availableDrivers/'+currentDriver.id).remove();
+    showToast('Ficaste offline','info');
   }
+  
+  db.ref('drivers/'+currentDriver.id).update({status: isOnline?'online':'offline'});
 }
 
 function toggleSound(){
@@ -563,31 +502,27 @@ function toggleSound(){
   const btn = document.getElementById('soundToggle');
   btn.textContent = soundEnabled ? '🔔' : '🔕';
   btn.classList.toggle('active', soundEnabled);
-  showToast(soundEnabled ? 'Som ativado' : 'Som desativado', 'info');
 }
 
-// ==================== TRIP MANAGEMENT ====================
+// TRIPS
 function listenForTrips(){
-  // Listen for active trips
-  activeTripsListener = database.ref('activeTrips').on('value', (snapshot)=>{
-    const trips = snapshot.val();
+  db.ref('activeTrips').on('value', snap=>{
+    const trips = snap.val();
     renderRequests(trips);
   });
   
-  // Check if driver has current trip
-  database.ref('trips').orderByChild('driverId').equalTo(currentDriver.id).on('value', (snapshot)=>{
-    const trips = snapshot.val();
+  db.ref('trips').orderByChild('driverId').equalTo(currentDriver.id).on('value', snap=>{
+    const trips = snap.val();
     if(trips){
-      for(const tripId in trips){
-        const trip = trips[tripId];
-        if(['accepted', 'arrived', 'driving'].includes(trip.status)){
-          currentTripId = tripId;
-          renderActiveTrip(trip);
+      for(const id in trips){
+        const t = trips[id];
+        if(['accepted','arrived','driving'].includes(t.status)){
+          currentTripId = id;
+          renderActiveTrip(t);
           return;
         }
       }
     }
-    // No active trip
     document.getElementById('activeTripContainer').innerHTML = '';
     currentTripId = null;
   });
@@ -597,167 +532,129 @@ function renderRequests(trips){
   const container = document.getElementById('requestsList');
   
   if(!trips || !isOnline){
-    container.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">📭</div>
-        <div class="empty-title">${isOnline ? 'Sem pedidos disponíveis' : 'Estás offline'}</div>
-        <p>${isOnline ? 'Aguarde por novos pedidos de viagem' : 'Fique online para receber pedidos'}</p>
-      </div>
-    `;
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">'+(isOnline?'Sem pedidos':'Estás offline')+'</div><p>'+(isOnline?'Aguarde novos pedidos':'Fique online para receber pedidos')+'</p></div>';
     document.getElementById('pendingCount').textContent = '(0)';
     return;
   }
   
-  // Filter only searching trips
-  const availableTrips = [];
-  for(const tripId in trips){
-    if(trips[tripId].status === 'searching'){
-      availableTrips.push({id: tripId, ...trips[tripId]});
-    }
+  const available = [];
+  for(const id in trips){
+    if(trips[id].status==='searching') available.push({id,...trips[id]});
   }
   
-  document.getElementById('pendingCount').textContent = '(' + availableTrips.length + ')';
+  document.getElementById('pendingCount').textContent = '('+available.length+')';
   
-  if(availableTrips.length === 0){
-    container.innerHTML = `
-      <div class="empty-state">
-        <div class="empty-icon">📭</div>
-        <div class="empty-title">Sem pedidos disponíveis</div>
-        <p>Aguarde por novos pedidos de viagem</p>
-      </div>
-    `;
+  if(available.length===0){
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">Sem pedidos disponíveis</div><p>Aguarde por novos pedidos</p></div>';
     return;
   }
   
-  // Sort by time (newest first)
-  availableTrips.sort((a,b) => b.createdAt - a.createdAt);
+  available.sort((a,b)=>b.createdAt-a.createdAt);
   
-  container.innerHTML = availableTrips.map(trip => `
-    <div class="request-card new">
-      <div class="request-header">
-        <div class="passenger-info">
-          <div class="passenger-avatar">👤</div>
-          <div class="passenger-details">
-            <h3>${trip.passengerName || 'Passageiro'}</h3>
-            <p>⭐ ${trip.passengerRating || '5.0'} • ${timeAgo(trip.createdAt)}</p>
-          </div>
-        </div>
-        <div class="request-time">${formatTime(trip.createdAt)}</div>
-      </div>
-      
-      <div class="route-display">
-        <div class="route-points">
-          <div class="route-dot pickup"></div>
-          <div class="route-line"></div>
-          <div class="route-dot dest"></div>
-        </div>
-        <div class="route-details">
-          <div class="route-item">
-            <div class="route-label">Recolha</div>
-            <div class="route-value">${trip.pickup}</div>
-          </div>
-          <div class="route-item">
-            <div class="route-label">Destino</div>
-            <div class="route-value">${trip.destination}</div>
-          </div>
-        </div>
-      </div>
-      
-      <div class="trip-info">
-        <div class="trip-stat">
-          <span class="trip-stat-icon">📏</span>
-          <span>${trip.distance} km</span>
-        </div>
-        <div class="trip-stat">
-          <span class="trip-stat-icon">⏱️</span>
-          <span>${trip.estimatedTime || Math.ceil(trip.distance * 2)} min</span>
-        </div>
-        <div class="trip-stat">
-          <span class="trip-stat-icon">💰</span>
-          <span class="trip-stat-value">${trip.price} MTN</span>
-        </div>
-      </div>
-      
-      <div class="request-actions">
-        <button class="actionBtn btn-accept" onclick="acceptTrip('${trip.id}')">
-          <span>✓</span> Aceitar Viagem
-        </button>
-        <button class="actionBtn btn-reject" onclick="rejectTrip('${trip.id}')">
-          <span>✗</span> Ignorar
-        </button>
-      </div>
-    </div>
-  `).join('');
+  container.innerHTML = available.map(t=>{
+    const time = new Date(t.createdAt).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'});
+    return '<div class="request-card new">'+
+      '<div class="request-header">'+
+        '<div class="passenger-info">'+
+          '<div class="passenger-avatar">👤</div>'+
+          '<div class="passenger-details">'+
+            '<h3>'+(t.passengerName||'Passageiro')+'</h3>'+
+            '<p>⭐ '+(t.passengerRating||'5.0')+'</p>'+
+          '</div>'+
+        '</div>'+
+        '<div class="request-time">'+time+'</div>'+
+      '</div>'+
+      '<div class="route-display">'+
+        '<div class="route-points">'+
+          '<div class="route-dot pickup"></div>'+
+          '<div class="route-line"></div>'+
+          '<div class="route-dot dest"></div>'+
+        '</div>'+
+        '<div class="route-details">'+
+          '<div class="route-item">'+
+            '<div class="route-label">Recolha</div>'+
+            '<div class="route-value">'+t.pickup+'</div>'+
+          '</div>'+
+          '<div class="route-item">'+
+            '<div class="route-label">Destino</div>'+
+            '<div class="route-value">'+t.destination+'</div>'+
+          '</div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="trip-info">'+
+        '<div class="trip-stat">📏 '+t.distance+' km</div>'+
+        '<div class="trip-stat">⏱️ '+(t.estimatedTime||Math.ceil(t.distance*2))+' min</div>'+
+        '<div class="trip-stat"><span class="trip-stat-value">'+t.price+' MTN</span></div>'+
+      '</div>'+
+      '<div class="request-actions">'+
+        '<button class="actionBtn btn-accept" onclick="acceptTrip(\''+t.id+'\')">'+
+          '<span>✓</span> Aceitar'+
+        '</button>'+
+        '<button class="actionBtn btn-reject" onclick="rejectTrip(\''+t.id+'\')">'+
+          '<span>✗</span> Ignorar'+
+        '</button>'+
+      '</div>'+
+    '</div>';
+  }).join('');
   
-  // Play sound for new requests
-  if(availableTrips.length > 0){
-    playNotificationSound();
-  }
+  if(available.length>0) playNotificationSound();
 }
 
 function renderActiveTrip(trip){
   const container = document.getElementById('activeTripContainer');
   
-  let actionButton = '';
-  let statusText = '';
+  let btnText = '';
+  let btnClass = '';
+  let btnAction = '';
   
-  switch(trip.status){
-    case 'accepted':
-      statusText = 'Viagem Aceite - A caminho do passageiro';
-      actionButton = `<button class="actionBtn btn-arrived" onclick="updateTripStatus('arrived')" style="width:100%;margin-top:16px"><span>📍</span> Cheguei ao Local</button>`;
-      break;
-    case 'arrived':
-      statusText = 'No local de recolha - Aguardando passageiro';
-      actionButton = `<button class="actionBtn btn-primary" onclick="updateTripStatus('driving')" style="width:100%;margin-top:16px"><span>🚗</span> Iniciar Viagem</button>`;
-      break;
-    case 'driving':
-      statusText = 'Em viagem para o destino';
-      actionButton = `<button class="actionBtn btn-complete" onclick="updateTripStatus('completed')" style="width:100%;margin-top:16px"><span>✓</span> Concluir Viagem</button>`;
-      break;
+  if(trip.status === 'accepted'){
+    btnText = '<span>📍</span> Cheguei';
+    btnClass = 'btn-arrived';
+    btnAction = 'arrived';
+  } else if(trip.status === 'arrived'){
+    btnText = '<span>🚗</span> Iniciar Viagem';
+    btnClass = 'btn-primary';
+    btnAction = 'driving';
+  } else if(trip.status === 'driving'){
+    btnText = '<span>✓</span> Concluir';
+    btnClass = 'btn-complete';
+    btnAction = 'completed';
   }
   
-  container.innerHTML = `
-    <div class="active-trip-banner">
-      <div class="banner-content">
-        <div class="banner-title">Viagem em Progresso</div>
-        <div class="banner-text">${statusText}</div>
-        
-        <div style="display:flex;gap:16px;margin-top:16px;flex-wrap:wrap">
-          <div style="background:rgba(0,0,0,0.3);padding:12px 16px;border-radius:12px;flex:1;min-width:150px">
-            <div style="font-size:11px;opacity:0.8;margin-bottom:4px">PASSAGEIRO</div>
-            <div style="font-weight:600">${trip.passengerName}</div>
-            <div style="font-size:13px;opacity:0.8">📞 ${trip.passengerId}</div>
-          </div>
-          <div style="background:rgba(0,0,0,0.3);padding:12px 16px;border-radius:12px;flex:1;min-width:150px">
-            <div style="font-size:11px;opacity:0.8;margin-bottom:4px">DESTINO</div>
-            <div style="font-weight:600;font-size:14px">${trip.destination}</div>
-            <div style="font-size:13px;opacity:0.8">💰 ${trip.price} MTN</div>
-          </div>
-        </div>
-        
-        ${actionButton}
-        
-        <button class="actionBtn btn-reject" onclick="cancelTrip()" style="width:100%;margin-top:8px;background:rgba(255,71,87,0.3)">
-          <span>❌</span> Cancelar Viagem
-        </button>
-      </div>
-    </div>
-  `;
+  container.innerHTML = '<div class="active-trip-banner">'+
+    '<div class="banner-content">'+
+      '<div class="banner-title">Viagem em Progresso</div>'+
+      '<div class="banner-text">'+(trip.status==='accepted'?'A caminho do passageiro':trip.status==='arrived'?'Aguardando passageiro':'Em viagem')+'</div>'+
+      '<div style="display:flex;gap:16px;margin-top:16px;flex-wrap:wrap">'+
+        '<div style="background:rgba(0,0,0,0.3);padding:12px 16px;border-radius:12px;flex:1;min-width:150px">'+
+          '<div style="font-size:11px;opacity:0.8;margin-bottom:4px">PASSAGEIRO</div>'+
+          '<div style="font-weight:600">'+trip.passengerName+'</div>'+
+          '<div style="font-size:13px;opacity:0.8">📞 '+trip.passengerId+'</div>'+
+        '</div>'+
+        '<div style="background:rgba(0,0,0,0.3);padding:12px 16px;border-radius:12px;flex:1;min-width:150px">'+
+          '<div style="font-size:11px;opacity:0.8;margin-bottom:4px">DESTINO</div>'+
+          '<div style="font-weight:600;font-size:14px">'+trip.destination+'</div>'+
+          '<div style="font-size:13px;opacity:0.8">💰 '+trip.price+' MTN</div>'+
+        '</div>'+
+      '</div>'+
+      '<div class="banner-actions">'+
+        '<button class="actionBtn btn-secondary" onclick="window.open(\'tel:'+trip.passengerId+'\')" style="flex:1">'+
+          '<span>📞</span> Ligar'+
+        '</button>'+
+        '<button class="actionBtn '+btnClass+'" onclick="updateStatus(\''+btnAction+'\')" style="flex:1">'+btnText+'</button>'+
+      '</div>'+
+      '<button class="actionBtn btn-danger" onclick="cancelTrip()" style="width:100%;margin-top:8px;background:rgba(255,71,87,0.3)">'+
+        '<span>❌</span> Cancelar Viagem'+
+      '</button>'+
+    '</div>'+
+  '</div>';
 }
 
 function acceptTrip(tripId){
-  if(!isOnline || !currentDriver){
-    showToast('Erro: Não estás online!', 'error');
-    return;
-  }
+  if(!isOnline || !currentDriver) return;
+  if(currentTripId){ showToast('Já tens uma viagem ativa!','error'); return; }
   
-  // Check if already has active trip
-  if(currentTripId){
-    showToast('Já tens uma viagem em progresso!', 'error');
-    return;
-  }
-  
-  const updates = {
+  db.ref('trips/'+tripId).update({
     driverId: currentDriver.id,
     driverName: currentDriver.name,
     driverPhone: currentDriver.phone,
@@ -765,94 +662,79 @@ function acceptTrip(tripId){
     driverRating: currentDriver.rating,
     status: 'accepted',
     acceptedAt: Date.now()
-  };
-  
-  database.ref('trips/' + tripId).update(updates).then(()=>{
-    database.ref('activeTrips/' + tripId).update(updates);
+  }).then(()=>{
+    db.ref('activeTrips/'+tripId).update({
+      driverId: currentDriver.id,
+      driverName: currentDriver.name,
+      status: 'accepted'
+    });
     currentTripId = tripId;
-    showToast('Viagem aceite! A caminho do passageiro.', 'success');
+    showToast('Viagem aceite!','success');
   });
 }
 
 function rejectTrip(tripId){
-  // Just remove from view temporarily (driver can still see it if refreshed)
-  showToast('Pedido ignorado', 'info');
+  showToast('Pedido ignorado','info');
 }
 
-function updateTripStatus(status){
+function updateStatus(status){
   if(!currentTripId) return;
   
   const updates = {status: status};
-  
-  if(status === 'completed'){
+  if(status==='completed'){
     updates.completedAt = Date.now();
-    
-    // Update driver stats
-    database.ref('trips/' + currentTripId).once('value', (snapshot)=>{
-      const trip = snapshot.val();
-      if(trip){
-        const newTrips = (currentDriver.trips || 0) + 1;
-        const newEarnings = (currentDriver.earnings || 0) + (trip.price || 0);
+  }
+  
+  db.ref('trips/'+currentTripId).update(updates).then(()=>{
+    if(status==='completed'){
+      db.ref('trips/'+currentTripId).once('value').then(snap=>{
+        const trip = snap.val();
+        const newTrips = (currentDriver.totalTrips||0) + 1;
+        const newEarnings = (currentDriver.totalEarnings||0) + (trip.price||0);
         
-        database.ref('drivers/' + currentDriver.id).update({
-          trips: newTrips,
-          earnings: newEarnings
+        db.ref('drivers/'+currentDriver.id).update({
+          totalTrips: newTrips,
+          totalEarnings: newEarnings
         });
         
-        currentDriver.trips = newTrips;
-        currentDriver.earnings = newEarnings;
-        updateStats();
+        currentDriver.totalTrips = newTrips;
+        currentDriver.totalEarnings = newEarnings;
+        updateDriverUI();
         
-        // Remove from active trips
-        database.ref('activeTrips/' + currentTripId).remove();
-        
-        showToast('Viagem concluída! +' + trip.price + ' MTN', 'success');
+        db.ref('activeTrips/'+currentTripId).remove();
         currentTripId = null;
-      }
-    });
-  }else{
-    database.ref('trips/' + currentTripId).update(updates);
-    database.ref('activeTrips/' + currentTripId).update(updates);
-    
-    const messages = {
-      'arrived': 'Chegaste ao local!',
-      'driving': 'Viagem iniciada! Bom trajeto.'
-    };
-    showToast(messages[status], 'success');
-  }
+        showToast('Viagem concluída! +'+(trip.price||0)+' MTN','success');
+      });
+    }else{
+      db.ref('activeTrips/'+currentTripId).update({status: status});
+      const msgs = {arrived:'Chegaste ao local!',driving:'Viagem iniciada!'};
+      showToast(msgs[status],'success');
+    }
+  });
 }
 
 function cancelTrip(){
   if(!currentTripId) return;
+  if(!confirm('Cancelar esta viagem?')) return;
   
-  if(confirm('Tens certeza que desejas cancelar esta viagem?')){
-    database.ref('trips/' + currentTripId).update({
-      status: 'searching',
-      driverId: null,
-      driverName: null,
-      driverPhone: null,
-      driverPlate: null,
-      cancelledByDriver: true,
-      cancelledAt: Date.now()
-    });
-    
-    database.ref('activeTrips/' + currentTripId).update({
-      status: 'searching',
-      driverId: null
-    });
-    
-    currentTripId = null;
-    showToast('Viagem cancelada', 'info');
-  }
+  db.ref('trips/'+currentTripId).update({
+    status: 'searching',
+    driverId: null,
+    cancelledByDriver: true,
+    cancelledAt: Date.now()
+  });
+  
+  db.ref('activeTrips/'+currentTripId).update({
+    status: 'searching',
+    driverId: null
+  });
+  
+  currentTripId = null;
+  showToast('Viagem cancelada','info');
 }
 
-// ==================== INITIALIZATION ====================
-checkStoredDriver();
-
-// Update stats every minute if online
-setInterval(()=>{
-  if(isOnline) updateStats();
-}, 60000);
+// INIT
+checkStoredLogin();
 </script>
 </body>
 </html>'''
