@@ -1,4 +1,4 @@
-html_code = '''<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt">
 <head>
 <meta charset="utf-8" />
@@ -556,26 +556,34 @@ function closeMapModal(){
   currentTripData = null;
 }
 
-function openExternalNavigation(){
-  if(!currentTripData) return;
-  
-  const destLat = currentTripData.destLat || currentTripData.pickupLat;
-  const destLng = currentTripData.destLng || currentTripData.pickupLng;
-  
-  // Open Google Maps or Waze
-  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-  
-  if(isMobile){
-    // Try Waze first, then Google Maps
-    window.open('waze://?ll=' + destLat + ',' + destLng + '&navigate=yes');
-    setTimeout(()=>{
-      window.open('google.navigation:q=' + destLat + ',' + destLng);
-    }, 500);
-  } else {
-    window.open('https://www.google.com/maps/dir/?api=1&destination=' + destLat + ',' + destLng);
-  }
-}
+// Localize a função antiga e substitua por esta:
+function openExternalNavigation(lat, lng, label = "Destino") {
+    if (!lat || !lng) {
+        showToast("Coordenadas não disponíveis", "error");
+        return;
+    }
 
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    let url = "";
+
+    if (/Android/i.test(navigator.userAgent)) {
+        // Abre o Google Maps nativo no Android
+        url = `google.navigation:q=${lat},${lng}`;
+    } else if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+        // Abre o Apple Maps ou Google Maps no iOS
+        url = `maps://?q=${label}&ll=${lat},${lng}`;
+    } else {
+        // Se estiver no computador, abre o site normal
+        url = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+    }
+
+    window.location.href = url;
+    
+    // Backup: Se o app não abrir em 500ms, tenta abrir o browser
+    setTimeout(() => {
+        window.open(`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`, '_blank');
+    }, 500);
+}
 // AUTH
 function showAuthTab(tab){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
