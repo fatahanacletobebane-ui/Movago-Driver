@@ -1,12 +1,16 @@
- '''<!DOCTYPE html>
+html_code = '''<!DOCTYPE html>
 <html lang="pt">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>MovaGo — Console do Motorista</title>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
 <style>
   :root{
     --primary:#FF6B00;--primary-light:#FF8C42;--secondary:#FFD700;--accent:#00C853;
@@ -101,6 +105,7 @@
   .btn-complete{background:linear-gradient(135deg,var(--info) 0%,#64b5f6 100%);color:#fff}
   .btn-danger{background:linear-gradient(135deg,var(--danger) 0%,#ff6b81 100%);color:#fff}
   .btn-secondary{background:rgba(255,255,255,0.1);color:#fff;border:1px solid rgba(255,255,255,0.1)}
+  .btn-map{background:linear-gradient(135deg,#2196F3 0%,#03A9F4 100%);color:#fff}
   
   .profile-card{background:var(--glass);border-radius:20px;padding:24px;margin-bottom:24px;border:1px solid rgba(255,255,255,0.05)}
   .profile-header{display:flex;align-items:center;gap:16px;margin-bottom:20px}
@@ -132,10 +137,94 @@
   .sound-toggle{background:var(--glass);border:none;color:var(--text-secondary);width:40px;height:40px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;transition:all 0.3s;border:1px solid rgba(255,255,255,0.1)}
   .sound-toggle:hover{color:var(--primary);background:rgba(255,107,0,0.1)}
   .sound-toggle.active{color:var(--primary)}
+  
+  /* MODAL STYLES */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.9);backdrop-filter:blur(10px);z-index:20000;display:none;flex-direction:column;padding:0}
+  .modal-overlay.active{display:flex}
+  .modal-header{display:flex;justify-content:space-between;align-items:center;padding:16px 20px;background:var(--glass);border-bottom:1px solid rgba(255,255,255,0.1)}
+  .modal-title{font-size:18px;font-weight:700}
+  .modal-close{background:rgba(255,255,255,0.1);border:none;color:#fff;width:40px;height:40px;border-radius:50%;cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center}
+  .modal-content{flex:1;position:relative;overflow:hidden}
+  #mapContainer{width:100%;height:100%;min-height:400px}
+  .leaflet-routing-container{background:rgba(30,30,40,0.95)!important;color:#fff!important;border-radius:12px!important;border:1px solid rgba(255,255,255,0.1)!important;backdrop-filter:blur(10px)!important;max-height:300px;overflow-y:auto}
+  .leaflet-routing-alt{background:transparent!important;color:#fff!important}
+  .leaflet-routing-alt table{color:#fff!important}
+  .leaflet-routing-alt h2{color:var(--primary)!important}
+  .leaflet-routing-alt h3{color:var(--secondary)!important}
+  
+  /* RATING MODAL */
+  .rating-modal{background:var(--card-bg);border-radius:24px;padding:32px;max-width:400px;width:90%;border:1px solid rgba(255,255,255,0.1);animation:modal-in 0.3s ease;margin:auto}
+  @keyframes modal-in{from{opacity:0;transform:scale(0.9)}to{opacity:1;transform:scale(1)}}
+  .rating-title{font-size:24px;font-weight:700;margin-bottom:8px;text-align:center}
+  .rating-subtitle{text-align:center;color:var(--text-secondary);margin-bottom:24px;font-size:14px}
+  .star-rating{display:flex;justify-content:center;gap:12px;margin-bottom:24px}
+  .star{font-size:40px;cursor:pointer;transition:all 0.2s;opacity:0.3}
+  .star.active{opacity:1;color:var(--secondary);text-shadow:0 0 20px var(--secondary)}
+  .star:hover{transform:scale(1.2)}
+  
+  /* HISTORY STYLES */
+  .history-container{display:flex;flex-direction:column;gap:16px;margin-top:20px}
+  .history-card{background:var(--glass);border-radius:16px;padding:20px;border:1px solid rgba(255,255,255,0.05)}
+  .history-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+  .history-date{font-size:12px;color:var(--text-secondary)}
+  .history-status{padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;background:var(--accent);color:#fff}
+  .history-status.cancelled{background:var(--danger)}
+  .history-route{display:flex;gap:12px;margin-bottom:12px}
+  .history-route-dot{width:10px;height:10px;border-radius:50%;background:var(--primary);flex-shrink:0;margin-top:4px}
+  .history-route-line{width:2px;background:rgba(255,255,255,0.1);margin-left:4px}
+  .history-route-text{font-size:14px;line-height:1.4}
+  .history-details{display:flex;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid rgba(255,255,255,0.05)}
+  .history-passenger{display:flex;align-items:center;gap:8px;font-size:14px}
+  .history-earning{font-size:18px;font-weight:700;color:var(--secondary)}
+  
+  .pending-approval{background:var(--glass);border-radius:16px;padding:24px;text-align:center;border:1px solid rgba(255,255,255,0.1);margin-bottom:24px}
+  .pending-icon{font-size:48px;margin-bottom:16px}
+  .pending-title{font-size:18px;font-weight:600;margin-bottom:8px}
+  .pending-text{color:var(--text-secondary);font-size:14px}
+  
+  .section-title{display:flex;align-items:center;gap:8px;margin:24px 0 16px;font-size:18px;font-weight:600}
+  .history-empty{text-align:center;padding:40px 20px;color:var(--text-secondary)}
+  
+  .map-btn-container{display:flex;gap:12px;margin-top:12px}
+  .map-btn{flex:1;padding:12px;border:none;border-radius:10px;cursor:pointer;font-size:13px;font-weight:600;transition:all 0.3s;display:flex;align-items:center;justify-content:center;gap:6px;background:rgba(0,0,0,0.3);color:#fff;border:1px solid rgba(255,255,255,0.1)}
+  .map-btn:hover{background:rgba(255,255,255,0.1)}
 </style>
 </head>
 <body>
   <div class="toast-container" id="toastContainer"></div>
+  
+  <!-- MAP MODAL -->
+  <div class="modal-overlay" id="mapModal">
+    <div class="modal-header">
+      <div class="modal-title">🗺️ Navegação</div>
+      <button class="modal-close" onclick="closeMapModal()">✕</button>
+    </div>
+    <div class="modal-content">
+      <div id="mapContainer"></div>
+    </div>
+  </div>
+  
+  <!-- RATING MODAL -->
+  <div class="modal-overlay" id="ratingModal" style="align-items:center;justify-content:center;padding:20px">
+    <div class="rating-modal">
+      <div class="rating-title">Avaliar Passageiro</div>
+      <div class="rating-subtitle">Como foi a sua experiência?</div>
+      <div class="star-rating" id="starRating">
+        <span class="star" data-value="1">⭐</span>
+        <span class="star" data-value="2">⭐</span>
+        <span class="star" data-value="3">⭐</span>
+        <span class="star" data-value="4">⭐</span>
+        <span class="star" data-value="5">⭐</span>
+      </div>
+      <div class="formGroup" style="margin-bottom:20px">
+        <label>Comentário (opcional)</label>
+        <input type="text" id="ratingComment" placeholder="Deixe um comentário..." />
+      </div>
+      <button class="actionBtn btn-primary" onclick="submitRating()" style="width:100%">
+        <span>✓</span> Enviar Avaliação
+      </button>
+    </div>
+  </div>
   
   <div class="app">
     <div class="header">
@@ -213,6 +302,20 @@
         </div>
       </div>
       
+      <!-- PENDING APPROVAL -->
+      <div class="section" id="pendingSection">
+        <div class="login-screen">
+          <div class="pending-approval">
+            <div class="pending-icon">⏳</div>
+            <div class="pending-title">Conta em Aprovação</div>
+            <div class="pending-text">A sua conta está pendente de aprovação pelo administrador. Será notificado quando for aprovada.</div>
+          </div>
+          <button class="actionBtn btn-secondary" onclick="logout()" style="max-width:400px;width:100%">
+            <span>🚪</span> Voltar
+          </button>
+        </div>
+      </div>
+      
       <!-- DASHBOARD -->
       <div class="section" id="dashboardSection">
         
@@ -286,6 +389,17 @@
           </div>
         </div>
         
+        <!-- Daily History -->
+        <div class="section-title">
+          <span>📜</span> Histórico de Hoje
+        </div>
+        <div class="history-container" id="dailyHistoryList">
+          <div class="history-empty">
+            <div class="empty-icon">📭</div>
+            <p>Sem viagens hoje</p>
+          </div>
+        </div>
+        
         <button class="actionBtn btn-secondary" onclick="logout()" style="margin-top:24px">
           <span>🚪</span> Sair da Conta
         </button>
@@ -315,6 +429,12 @@ let isOnline = false;
 let soundEnabled = true;
 let currentTripId = null;
 let onlineSince = null;
+let rejectedTrips = [];
+let currentRatingTripId = null;
+let selectedRating = 0;
+let map = null;
+let routingControl = null;
+let currentTripData = null;
 
 // UTILITIES
 function showToast(msg,type='info'){
@@ -349,6 +469,113 @@ function playNotificationSound(){
   } catch(e) {}
 }
 
+// MAP FUNCTIONS
+function initMap(){
+  if(map) return;
+  
+  // Default to Maputo, Mozambique
+  map = L.map('mapContainer').setView([-25.9692, 32.5732], 13);
+  
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors',
+    maxZoom: 19
+  }).addTo(map);
+}
+
+function openMapModal(type, tripData){
+  currentTripData = tripData;
+  document.getElementById('mapModal').classList.add('active');
+  
+  setTimeout(()=>{
+    initMap();
+    
+    if(!tripData) return;
+    
+    // Clear previous routing
+    if(routingControl){
+      map.removeControl(routingControl);
+      routingControl = null;
+    }
+    
+    // Get coordinates
+    let pickupLat, pickupLng, destLat, destLng;
+    
+    if(type === 'request'){
+      // For new requests - use trip data or default to showing pickup only
+      pickupLat = tripData.pickupLat || -25.9692;
+      pickupLng = tripData.pickupLng || 32.5732;
+      destLat = tripData.destLat || pickupLat;
+      destLng = tripData.destLng || pickupLng;
+    } else {
+      // For active trip - use current location and destination
+      pickupLat = tripData.currentLat || -25.9692;
+      pickupLng = tripData.currentLng || 32.5732;
+      destLat = tripData.destLat || pickupLat;
+      destLng = tripData.destLng || pickupLng;
+    }
+    
+    // Add routing control
+    routingControl = L.Routing.control({
+      waypoints: [
+        L.latLng(pickupLat, pickupLng),
+        L.latLng(destLat, destLng)
+      ],
+      routeWhileDragging: false,
+      showAlternatives: false,
+      fitSelectedRoutes: true,
+      lineOptions: {
+        styles: [{color: '#FF6B00', opacity: 0.8, weight: 6}]
+      },
+      createMarker: function(i, waypoint, n){
+        const marker = L.marker(waypoint.latLng, {
+          icon: L.divIcon({
+            className: 'custom-marker',
+            html: '<div style="background:' + (i===0?'#FF6B00':'#FFD700') + ';width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 4px 12px rgba(0,0,0,0.3);">' + (i===0?'📍':'🏁') + '</div>',
+            iconSize: [30, 30],
+            iconAnchor: [15, 15]
+          })
+        });
+        return marker;
+      }
+    }).addTo(map);
+    
+    // Update popup content
+    routingControl.on('routesfound', function(e){
+      const routes = e.routes;
+      const summary = routes[0].summary;
+      const distance = (summary.totalDistance / 1000).toFixed(1);
+      const time = Math.round(summary.totalTime / 60);
+      showToast('Rota: ' + distance + ' km • ' + time + ' min', 'success');
+    });
+    
+  }, 100);
+}
+
+function closeMapModal(){
+  document.getElementById('mapModal').classList.remove('active');
+  currentTripData = null;
+}
+
+function openExternalNavigation(){
+  if(!currentTripData) return;
+  
+  const destLat = currentTripData.destLat || currentTripData.pickupLat;
+  const destLng = currentTripData.destLng || currentTripData.pickupLng;
+  
+  // Open Google Maps or Waze
+  const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  
+  if(isMobile){
+    // Try Waze first, then Google Maps
+    window.open('waze://?ll=' + destLat + ',' + destLng + '&navigate=yes');
+    setTimeout(()=>{
+      window.open('google.navigation:q=' + destLat + ',' + destLng);
+    }, 500);
+  } else {
+    window.open('https://www.google.com/maps/dir/?api=1&destination=' + destLat + ',' + destLng);
+  }
+}
+
 // AUTH
 function showAuthTab(tab){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
@@ -361,7 +588,17 @@ function checkStoredLogin(){
   const driver = localStorage.getItem('movago_driver');
   if(driver){
     currentDriver = JSON.parse(driver);
-    showDashboard();
+    db.ref('drivers/'+currentDriver.id).once('value').then(snap=>{
+      if(snap.exists()){
+        const driverData = snap.val();
+        if(driverData.approved === true){
+          showDashboard();
+        } else {
+          showSection('pendingSection');
+          document.getElementById('driverStatus').style.display = 'none';
+        }
+      }
+    });
   }
 }
 
@@ -377,10 +614,18 @@ function login(){
     if(snap.exists()){
       const driver = snap.val();
       if(driver.pin === pin){
-        currentDriver = driver;
-        localStorage.setItem('movago_driver', JSON.stringify(driver));
-        showDashboard();
-        showToast('Bem-vindo, '+driver.name+'!','success');
+        if(driver.approved === true){
+          currentDriver = driver;
+          localStorage.setItem('movago_driver', JSON.stringify(driver));
+          showDashboard();
+          showToast('Bem-vindo, '+driver.name+'!','success');
+        } else {
+          currentDriver = driver;
+          localStorage.setItem('movago_driver', JSON.stringify(driver));
+          showSection('pendingSection');
+          document.getElementById('driverStatus').style.display = 'none';
+          showToast('Conta pendente de aprovação','info');
+        }
       }else{
         showToast('PIN incorreto','error');
       }
@@ -418,6 +663,7 @@ function register(){
     totalTrips: 0,
     totalEarnings: 0,
     status: 'offline',
+    approved: false,
     createdAt: Date.now(),
     lastLogin: Date.now()
   };
@@ -425,8 +671,9 @@ function register(){
   db.ref('drivers/'+driverId).set(driverData).then(()=>{
     currentDriver = driverData;
     localStorage.setItem('movago_driver', JSON.stringify(driverData));
-    showDashboard();
-    showToast('Conta criada com sucesso!','success');
+    showSection('pendingSection');
+    document.getElementById('driverStatus').style.display = 'none';
+    showToast('Conta criada! Aguardando aprovação do administrador.','success');
   });
 }
 
@@ -434,6 +681,7 @@ function logout(){
   if(isOnline) toggleOnline();
   localStorage.removeItem('movago_driver');
   currentDriver = null;
+  rejectedTrips = [];
   location.reload();
 }
 
@@ -442,6 +690,7 @@ function showDashboard(){
   showSection('dashboardSection');
   document.getElementById('driverStatus').style.display = 'flex';
   updateDriverUI();
+  loadDailyHistory();
   listenForTrips();
 }
 
@@ -539,6 +788,7 @@ function renderRequests(trips){
   
   const available = [];
   for(const id in trips){
+    if(rejectedTrips.includes(id)) continue;
     if(trips[id].status==='searching') available.push({id,...trips[id]});
   }
   
@@ -585,6 +835,11 @@ function renderRequests(trips){
         '<div class="trip-stat">📏 '+t.distance+' km</div>'+
         '<div class="trip-stat">⏱️ '+(t.estimatedTime||Math.ceil(t.distance*2))+' min</div>'+
         '<div class="trip-stat"><span class="trip-stat-value">'+t.price+' MTN</span></div>'+
+      '</div>'+
+      '<div class="map-btn-container">'+
+        '<button class="map-btn" onclick="openMapModal(\'request\', {pickupLat: '+(t.pickupLat||-25.9692)+', pickupLng: '+(t.pickupLng||32.5732)+', destLat: '+(t.destLat||-25.9692)+', destLng: '+(t.destLng||32.5732)+'})">'+
+          '<span>🗺️</span> Ver no Mapa'+
+        '</button>'+
       '</div>'+
       '<div class="request-actions">'+
         '<button class="actionBtn btn-accept" onclick="acceptTrip(\''+t.id+'\')">'+
@@ -637,6 +892,14 @@ function renderActiveTrip(trip){
           '<div style="font-size:13px;opacity:0.8">💰 '+trip.price+' MTN</div>'+
         '</div>'+
       '</div>'+
+      '<div class="map-btn-container" style="margin-top:16px">'+
+        '<button class="map-btn" onclick="openActiveTripMap()">'+
+          '<span>🗺️</span> Ver Rota no Mapa'+
+        '</button>'+
+        '<button class="map-btn" onclick="openExternalNavigation()">'+
+          '<span>📱</span> Abrir Navegação'+
+        '</button>'+
+      '</div>'+
       '<div class="banner-actions">'+
         '<button class="actionBtn btn-secondary" onclick="window.open(\'tel:'+trip.passengerId+'\')" style="flex:1">'+
           '<span>📞</span> Ligar'+
@@ -648,6 +911,28 @@ function renderActiveTrip(trip){
       '</button>'+
     '</div>'+
   '</div>';
+}
+
+function openActiveTripMap(){
+  if(!currentTripId) return;
+  
+  db.ref('trips/'+currentTripId).once('value').then(snap=>{
+    const trip = snap.val();
+    if(trip){
+      // Get current driver location
+      db.ref('availableDrivers/'+currentDriver.id).once('value').then(driverSnap=>{
+        const driverData = driverSnap.val() || {};
+        openMapModal('active', {
+          currentLat: driverData.lat || -25.9692,
+          currentLng: driverData.lon || 32.5732,
+          destLat: trip.destLat || trip.pickupLat || -25.9692,
+          destLng: trip.destLng || trip.pickupLng || 32.5732,
+          pickupLat: trip.pickupLat || -25.9692,
+          pickupLng: trip.pickupLng || 32.5732
+        });
+      });
+    }
+  });
 }
 
 function acceptTrip(tripId){
@@ -674,7 +959,13 @@ function acceptTrip(tripId){
 }
 
 function rejectTrip(tripId){
+  if(!rejectedTrips.includes(tripId)){
+    rejectedTrips.push(tripId);
+  }
   showToast('Pedido ignorado','info');
+  db.ref('activeTrips').once('value').then(snap=>{
+    renderRequests(snap.val());
+  });
 }
 
 function updateStatus(status){
@@ -687,29 +978,95 @@ function updateStatus(status){
   
   db.ref('trips/'+currentTripId).update(updates).then(()=>{
     if(status==='completed'){
-      db.ref('trips/'+currentTripId).once('value').then(snap=>{
-        const trip = snap.val();
-        const newTrips = (currentDriver.totalTrips||0) + 1;
-        const newEarnings = (currentDriver.totalEarnings||0) + (trip.price||0);
-        
-        db.ref('drivers/'+currentDriver.id).update({
-          totalTrips: newTrips,
-          totalEarnings: newEarnings
-        });
-        
-        currentDriver.totalTrips = newTrips;
-        currentDriver.totalEarnings = newEarnings;
-        updateDriverUI();
-        
-        db.ref('activeTrips/'+currentTripId).remove();
-        currentTripId = null;
-        showToast('Viagem concluída! +'+(trip.price||0)+' MTN','success');
-      });
+      showRatingModal(currentTripId);
     }else{
       db.ref('activeTrips/'+currentTripId).update({status: status});
       const msgs = {arrived:'Chegaste ao local!',driving:'Viagem iniciada!'};
       showToast(msgs[status],'success');
     }
+  });
+}
+
+// RATING
+function showRatingModal(tripId){
+  currentRatingTripId = tripId;
+  selectedRating = 0;
+  document.getElementById('ratingComment').value = '';
+  document.querySelectorAll('.star').forEach(s=>s.classList.remove('active'));
+  document.getElementById('ratingModal').classList.add('active');
+}
+
+function closeRatingModal(){
+  document.getElementById('ratingModal').classList.remove('active');
+  currentRatingTripId = null;
+}
+
+// Star rating click handlers
+document.querySelectorAll('.star').forEach(star=>{
+  star.addEventListener('click', function(){
+    selectedRating = parseInt(this.dataset.value);
+    document.querySelectorAll('.star').forEach((s, index)=>{
+      if(index < selectedRating){
+        s.classList.add('active');
+      } else {
+        s.classList.remove('active');
+      }
+    });
+  });
+});
+
+function submitRating(){
+  if(selectedRating === 0){
+    showToast('Selecione uma avaliação','error');
+    return;
+  }
+  
+  if(!currentRatingTripId) return;
+  
+  const comment = document.getElementById('ratingComment').value.trim();
+  
+  const ratingData = {
+    rating: selectedRating,
+    comment: comment,
+    ratedBy: 'driver',
+    ratedAt: Date.now()
+  };
+  
+  db.ref('trips/'+currentRatingTripId).once('value').then(snap=>{
+    const trip = snap.val();
+    
+    db.ref('trips/'+currentRatingTripId+'/passengerRating').set(ratingData);
+    
+    db.ref('console/ratings/'+currentRatingTripId).set({
+      ...ratingData,
+      passengerId: trip.passengerId,
+      passengerName: trip.passengerName,
+      driverId: currentDriver.id,
+      driverName: currentDriver.name,
+      tripId: currentRatingTripId,
+      pickup: trip.pickup,
+      destination: trip.destination,
+      price: trip.price
+    });
+    
+    const newTrips = (currentDriver.totalTrips||0) + 1;
+    const newEarnings = (currentDriver.totalEarnings||0) + (trip.price||0);
+    
+    db.ref('drivers/'+currentDriver.id).update({
+      totalTrips: newTrips,
+      totalEarnings: newEarnings
+    });
+    
+    currentDriver.totalTrips = newTrips;
+    currentDriver.totalEarnings = newEarnings;
+    updateDriverUI();
+    
+    db.ref('activeTrips/'+currentRatingTripId).remove();
+    currentTripId = null;
+    
+    closeRatingModal();
+    showToast('Viagem concluída! +'+(trip.price||0)+' MTN','success');
+    loadDailyHistory();
   });
 }
 
@@ -733,8 +1090,79 @@ function cancelTrip(){
   showToast('Viagem cancelada','info');
 }
 
+// DAILY HISTORY
+function loadDailyHistory(){
+  if(!currentDriver) return;
+  
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate()+1);
+  
+  db.ref('trips').orderByChild('driverId').equalTo(currentDriver.id).once('value').then(snap=>{
+    const trips = snap.val();
+    const container = document.getElementById('dailyHistoryList');
+    
+    if(!trips){
+      container.innerHTML = '<div class="history-empty"><div class="empty-icon">📭</div><p>Sem viagens hoje</p></div>';
+      return;
+    }
+    
+    const todayTrips = [];
+    for(const id in trips){
+      const t = trips[id];
+      const completedAt = t.completedAt || t.acceptedAt;
+      if(completedAt >= today.getTime() && completedAt < tomorrow.getTime()){
+        todayTrips.push({id,...t});
+      }
+    }
+    
+    const completedTrips = todayTrips.filter(t=>t.status==='completed');
+    const todayEarnings = completedTrips.reduce((sum,t)=>sum+(t.price||0),0);
+    document.getElementById('todayTrips').textContent = completedTrips.length;
+    document.getElementById('todayEarnings').textContent = todayEarnings;
+    
+    if(todayTrips.length===0){
+      container.innerHTML = '<div class="history-empty"><div class="empty-icon">📭</div><p>Sem viagens hoje</p></div>';
+      return;
+    }
+    
+    todayTrips.sort((a,b)=>(b.completedAt||b.acceptedAt)-(a.completedAt||a.acceptedAt));
+    
+    container.innerHTML = todayTrips.map(t=>{
+      const time = new Date(t.completedAt||t.acceptedAt).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'});
+      const isCompleted = t.status==='completed';
+      const isCancelled = t.cancelledByDriver || t.cancelledByPassenger;
+      
+      return '<div class="history-card">'+
+        '<div class="history-header">'+
+          '<span class="history-date">'+time+'</span>'+
+          '<span class="history-status '+(isCancelled?'cancelled':'')+'">'+(isCancelled?'Cancelada':isCompleted?'Concluída':'Em andamento')+'</span>'+
+        '</div>'+
+        '<div class="history-route">'+
+          '<div style="display:flex;flex-direction:column;align-items:center;margin-right:8px">'+
+            '<div class="history-route-dot"></div>'+
+            '<div class="history-route-line" style="height:30px"></div>'+
+            '<div class="history-route-dot" style="background:var(--secondary)"></div>'+
+          '</div>'+
+          '<div style="flex:1">'+
+            '<div class="history-route-text" style="margin-bottom:8px">'+t.pickup+'</div>'+
+            '<div class="history-route-text">'+t.destination+'</div>'+
+          '</div>'+
+        '</div>'+
+        '<div class="history-details">'+
+          '<div class="history-passenger">'+
+            '<span>👤</span> '+(t.passengerName||'Passageiro')+
+          '</div>'+
+          '<div class="history-earning">'+(isCompleted?(t.price+' MTN'):isCancelled?'---':'Em andamento')+'</div>'+
+        '</div>'+
+      '</div>';
+    }).join('');
+  });
+}
+
 // INIT
 checkStoredLogin();
 </script>
 </body>
-</html>'''
+</html>
