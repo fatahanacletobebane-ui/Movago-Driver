@@ -37,6 +37,11 @@
   .status-dot{width:10px;height:10px;border-radius:50%;background:var(--text-secondary);transition:all 0.3s}
   .status-toggle.active .status-dot{background:var(--accent);box-shadow:0 0 10px var(--accent)}
   
+  .balance-btn{background:var(--gradient-hero);border:none;color:#fff;padding:8px 16px;border-radius:20px;cursor:pointer;font-weight:600;font-size:14px;display:flex;align-items:center;gap:6px;transition:all 0.3s;box-shadow:0 4px 16px rgba(255,107,0,0.3)}
+  .balance-btn:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(255,107,0,0.4)}
+  .balance-btn.low-balance{background:linear-gradient(135deg,var(--danger) 0%,#ff6b81 100%)!important;animation:pulse-danger 1s infinite}
+  @keyframes pulse-danger{0%,100%{box-shadow:0 4px 16px rgba(255,71,87,0.3)}50%{box-shadow:0 4px 32px rgba(255,71,87,0.6)}}
+  
   .content{padding:20px;flex:1}
   .section{display:none}.section.active{display:block;animation:fadeIn 0.4s ease}
   @keyframes fadeIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
@@ -124,6 +129,7 @@
   .toast{background:rgba(30,30,40,0.95);color:#fff;padding:16px 20px;border-radius:12px;font-size:14px;font-weight:500;backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.1);box-shadow:0 10px 40px rgba(0,0,0,0.3);display:flex;align-items:center;gap:10px;animation:toast-in 0.3s ease;min-width:280px;border-left:4px solid var(--primary)}
   @keyframes toast-in{from{opacity:0;transform:translateX(100%)}to{opacity:1;transform:translateX(0)}}
   .toast.success{border-left-color:var(--accent)}
+  .toast.error{border-left-color:var(--danger)}
   
   .tabs{display:flex;gap:8px;margin-bottom:20px;background:var(--glass);padding:4px;border-radius:12px}
   .tab{flex:1;padding:12px;border:none;border-radius:8px;background:transparent;color:var(--text-secondary);font-size:14px;font-weight:600;cursor:pointer;transition:all 0.3s}
@@ -162,6 +168,16 @@
   .star.active{opacity:1;color:var(--secondary);text-shadow:0 0 20px var(--secondary)}
   .star:hover{transform:scale(1.2)}
   
+  /* BALANCE MODAL */
+  .balance-modal{background:var(--card-bg);border-radius:24px;padding:32px;max-width:420px;width:90%;border:1px solid rgba(255,255,255,0.1);animation:modal-in 0.3s ease;margin:auto}
+  .balance-display{text-align:center;margin-bottom:24px;padding:24px;background:linear-gradient(135deg,rgba(255,107,0,0.1) 0%,rgba(255,215,0,0.1) 100%);border-radius:16px;border:1px solid rgba(255,107,0,0.2)}
+  .balance-amount{font-size:48px;font-weight:800;color:var(--primary);margin-bottom:8px}
+  .balance-label{color:var(--text-secondary);font-size:14px}
+  .balance-info{background:rgba(0,0,0,0.2);padding:16px;border-radius:12px;margin-bottom:20px}
+  .balance-info-row{display:flex;justify-content:space-between;margin-bottom:8px;font-size:14px}
+  .balance-info-row:last-child{margin-bottom:0;padding-top:8px;border-top:1px solid rgba(255,255,255,0.1)}
+  .balance-actions{display:flex;gap:12px}
+  
   /* HISTORY STYLES */
   .history-container{display:flex;flex-direction:column;gap:16px;margin-top:20px}
   .history-card{background:var(--glass);border-radius:16px;padding:20px;border:1px solid rgba(255,255,255,0.05)}
@@ -188,6 +204,13 @@
   .map-btn-container{display:flex;gap:12px;margin-top:12px}
   .map-btn{flex:1;padding:12px;border:none;border-radius:10px;cursor:pointer;font-size:13px;font-weight:600;transition:all 0.3s;display:flex;align-items:center;justify-content:center;gap:6px;background:rgba(0,0,0,0.3);color:#fff;border:1px solid rgba(255,255,255,0.1)}
   .map-btn:hover{background:rgba(255,255,255,0.1)}
+  
+  /* BLOCKED SCREEN */
+  .blocked-screen{background:var(--glass);border-radius:20px;padding:40px;text-align:center;border:1px solid rgba(255,71,87,0.3);margin:20px}
+  .blocked-icon{font-size:64px;margin-bottom:16px;color:var(--danger)}
+  .blocked-title{font-size:24px;font-weight:700;color:var(--danger);margin-bottom:8px}
+  .blocked-text{color:var(--text-secondary);margin-bottom:24px;font-size:14px}
+  .blocked-reason{background:rgba(255,71,87,0.1);padding:16px;border-radius:12px;margin-bottom:24px;border-left:4px solid var(--danger)}
 </style>
 </head>
 <body>
@@ -226,6 +249,42 @@
     </div>
   </div>
   
+  <!-- BALANCE MODAL -->
+  <div class="modal-overlay" id="balanceModal" style="align-items:center;justify-content:center;padding:20px">
+    <div class="balance-modal">
+      <div class="balance-display">
+        <div class="balance-amount" id="modalBalance">0 MTN</div>
+        <div class="balance-label">Saldo Disponível</div>
+      </div>
+      <div class="balance-info">
+        <div class="balance-info-row">
+          <span>Taxa por viagem</span>
+          <span style="color:var(--danger)">5%</span>
+        </div>
+        <div class="balance-info-row">
+          <span>Viagens realizadas hoje</span>
+          <span id="modalTodayTrips">0</span>
+        </div>
+        <div class="balance-info-row">
+          <span>Descontado hoje</span>
+          <span style="color:var(--danger)" id="modalTodayFees">0 MTN</span>
+        </div>
+        <div class="balance-info-row">
+          <span>Ganho líquido hoje</span>
+          <span style="color:var(--accent)" id="modalTodayNet">0 MTN</span>
+        </div>
+      </div>
+      <div class="balance-actions">
+        <button class="actionBtn btn-secondary" onclick="closeBalanceModal()" style="flex:1">
+          <span>✕</span> Fechar
+        </button>
+      </div>
+      <div style="margin-top:16px;padding:12px;background:rgba(255,107,0,0.1);border-radius:8px;font-size:12px;color:var(--text-secondary);text-align:center">
+        💡 O saldo é gerenciado pela consola administrativa
+      </div>
+    </div>
+  </div>
+  
   <div class="app">
     <div class="header">
       <div class="logo-container">
@@ -237,6 +296,10 @@
       </div>
       <div class="driver-status" id="driverStatus" style="display:none">
         <button class="sound-toggle active" id="soundToggle" onclick="toggleSound()">🔔</button>
+        <button class="balance-btn" id="balanceBtn" onclick="openBalanceModal()">
+          <span>💰</span>
+          <span id="headerBalance">0 MTN</span>
+        </button>
         <div class="status-toggle" id="statusToggle" onclick="toggleOnline()">
           <div class="status-dot"></div>
           <span id="statusText">Offline</span>
@@ -313,6 +376,28 @@
           <button class="actionBtn btn-secondary" onclick="logout()" style="max-width:400px;width:100%">
             <span>🚪</span> Voltar
           </button>
+        </div>
+      </div>
+      
+      <!-- BLOCKED ACCOUNT -->
+      <div class="section" id="blockedSection">
+        <div class="login-screen">
+          <div class="blocked-screen">
+            <div class="blocked-icon">🚫</div>
+            <div class="blocked-title">Conta Bloqueada</div>
+            <div class="blocked-text">A sua conta foi bloqueada devido a avaliações negativas.</div>
+            <div class="blocked-reason">
+              <div style="font-weight:600;margin-bottom:4px">Classificação atual: <span id="blockedRating" style="color:var(--danger)">2.5</span> ⭐</div>
+              <div style="font-size:13px">Limite mínimo: 2.5 ⭐</div>
+            </div>
+            <div style="background:rgba(255,255,255,0.05);padding:16px;border-radius:12px;margin-bottom:24px;font-size:14px;color:var(--text-secondary)">
+              <p style="margin-bottom:8px">📞 Contacte a administração:</p>
+              <p style="color:var(--primary);font-weight:600">+258 84 000 0000</p>
+            </div>
+            <button class="actionBtn btn-secondary" onclick="logout()" style="width:100%">
+              <span>🚪</span> Sair
+            </button>
+          </div>
         </div>
       </div>
       
@@ -435,13 +520,15 @@ let selectedRating = 0;
 let map = null;
 let routingControl = null;
 let currentTripData = null;
+let notificationInterval = null;
+let pendingRequests = [];
 
 // UTILITIES
 function showToast(msg,type='info'){
   const container = document.getElementById('toastContainer');
   const toast = document.createElement('div');
-  toast.className = 'toast ' + (type==='success'?'success':'');
-  toast.innerHTML = '<span>' + (type==='success'?'✓':'ℹ') + '</span> ' + msg;
+  toast.className = 'toast ' + (type==='success'?'success':type==='error'?'error':'');
+  toast.innerHTML = '<span>' + (type==='success'?'✓':type==='error'?'✗':'ℹ') + '</span> ' + msg;
   container.appendChild(toast);
   setTimeout(()=>toast.remove(), 4000);
 }
@@ -451,6 +538,7 @@ function showSection(id){
   document.getElementById(id).classList.add('active');
 }
 
+// NOTIFICATION SOUND - TOCA CONTINUAMENTE ATÉ ACEITAR/RECUSAR
 function playNotificationSound(){
   if(!soundEnabled) return;
   try {
@@ -469,11 +557,28 @@ function playNotificationSound(){
   } catch(e) {}
 }
 
+function startNotificationAlarm(){
+  // Para alarme anterior se existir
+  stopNotificationAlarm();
+  // Toca imediatamente
+  playNotificationSound();
+  // Continua tocando a cada 2 segundos
+  notificationInterval = setInterval(() => {
+    playNotificationSound();
+  }, 2000);
+}
+
+function stopNotificationAlarm(){
+  if(notificationInterval){
+    clearInterval(notificationInterval);
+    notificationInterval = null;
+  }
+}
+
 // MAP FUNCTIONS
 function initMap(){
   if(map) return;
   
-  // Default to Maputo, Mozambique
   map = L.map('mapContainer').setView([-25.9692, 32.5732], 13);
   
   L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -491,30 +596,25 @@ function openMapModal(type, tripData){
     
     if(!tripData) return;
     
-    // Clear previous routing
     if(routingControl){
       map.removeControl(routingControl);
       routingControl = null;
     }
     
-    // Get coordinates
     let pickupLat, pickupLng, destLat, destLng;
     
     if(type === 'request'){
-      // For new requests - use trip data or default to showing pickup only
       pickupLat = tripData.pickupLat || -25.9692;
       pickupLng = tripData.pickupLng || 32.5732;
-      destLat = tripData.destLat || pickupLat;
-      destLng = tripData.destLng || pickupLng;
+      destLat = tripData.destLat || -25.9692;
+      destLng = tripData.destLng || 32.5732;
     } else {
-      // For active trip - use current location and destination
       pickupLat = tripData.currentLat || -25.9692;
       pickupLng = tripData.currentLng || 32.5732;
       destLat = tripData.destLat || pickupLat;
       destLng = tripData.destLng || pickupLng;
     }
     
-    // Add routing control
     routingControl = L.Routing.control({
       waypoints: [
         L.latLng(pickupLat, pickupLng),
@@ -539,7 +639,6 @@ function openMapModal(type, tripData){
       }
     }).addTo(map);
     
-    // Update popup content
     routingControl.on('routesfound', function(e){
       const routes = e.routes;
       const summary = routes[0].summary;
@@ -556,7 +655,6 @@ function closeMapModal(){
   currentTripData = null;
 }
 
-// Localize a função antiga e substitua por esta:
 function openExternalNavigation(lat, lng, label = "Destino") {
     if (!lat || !lng) {
         showToast("Coordenadas não disponíveis", "error");
@@ -567,23 +665,20 @@ function openExternalNavigation(lat, lng, label = "Destino") {
     let url = "";
 
     if (/Android/i.test(navigator.userAgent)) {
-        // Abre o Google Maps nativo no Android
         url = `google.navigation:q=${lat},${lng}`;
     } else if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) {
-        // Abre o Apple Maps ou Google Maps no iOS
         url = `maps://?q=${label}&ll=${lat},${lng}`;
     } else {
-        // Se estiver no computador, abre o site normal
         url = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
     }
 
     window.location.href = url;
     
-    // Backup: Se o app não abrir em 500ms, tenta abrir o browser
     setTimeout(() => {
         window.open(`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`, '_blank');
     }, 500);
 }
+
 // AUTH
 function showAuthTab(tab){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
@@ -599,6 +694,16 @@ function checkStoredLogin(){
     db.ref('drivers/'+currentDriver.id).once('value').then(snap=>{
       if(snap.exists()){
         const driverData = snap.val();
+        currentDriver = driverData; // Atualiza dados
+        
+        // Verifica se conta está bloqueada
+        if(driverData.approved === false && driverData.rating <= 2.5){
+          showSection('blockedSection');
+          document.getElementById('blockedRating').textContent = driverData.rating.toFixed(1);
+          document.getElementById('driverStatus').style.display = 'none';
+          return;
+        }
+        
         if(driverData.approved === true){
           showDashboard();
         } else {
@@ -622,14 +727,21 @@ function login(){
     if(snap.exists()){
       const driver = snap.val();
       if(driver.pin === pin){
+        currentDriver = driver;
+        localStorage.setItem('movago_driver', JSON.stringify(driver));
+        
+        // Verifica se está bloqueado
+        if(driver.approved === false && driver.rating <= 2.5){
+          showSection('blockedSection');
+          document.getElementById('blockedRating').textContent = driver.rating.toFixed(1);
+          document.getElementById('driverStatus').style.display = 'none';
+          return;
+        }
+        
         if(driver.approved === true){
-          currentDriver = driver;
-          localStorage.setItem('movago_driver', JSON.stringify(driver));
           showDashboard();
           showToast('Bem-vindo, '+driver.name+'!','success');
         } else {
-          currentDriver = driver;
-          localStorage.setItem('movago_driver', JSON.stringify(driver));
           showSection('pendingSection');
           document.getElementById('driverStatus').style.display = 'none';
           showToast('Conta pendente de aprovação','info');
@@ -670,10 +782,12 @@ function register(){
     rating: 5.0,
     totalTrips: 0,
     totalEarnings: 0,
+    balance: 0, // Saldo inicial
     status: 'offline',
     approved: false,
     createdAt: Date.now(),
-    lastLogin: Date.now()
+    lastLogin: Date.now(),
+    consecutiveNegativeRatings: 0 // Contador de avaliações negativas seguidas
   };
   
   db.ref('drivers/'+driverId).set(driverData).then(()=>{
@@ -687,10 +801,67 @@ function register(){
 
 function logout(){
   if(isOnline) toggleOnline();
+  stopNotificationAlarm();
   localStorage.removeItem('movago_driver');
   currentDriver = null;
   rejectedTrips = [];
   location.reload();
+}
+
+// BALANCE FUNCTIONS
+function updateBalanceDisplay(){
+  if(!currentDriver) return;
+  const balance = currentDriver.balance || 0;
+  document.getElementById('headerBalance').textContent = balance.toLocaleString() + ' MTN';
+  document.getElementById('modalBalance').textContent = balance.toLocaleString() + ' MTN';
+  
+  // Atualiza visual do botão se saldo baixo
+  const balanceBtn = document.getElementById('balanceBtn');
+  if(balance <= 0){
+    balanceBtn.classList.add('low-balance');
+  } else {
+    balanceBtn.classList.remove('low-balance');
+  }
+}
+
+function openBalanceModal(){
+  if(!currentDriver) return;
+  
+  // Calcula estatísticas do dia
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate()+1);
+  
+  db.ref('trips').orderByChild('driverId').equalTo(currentDriver.id).once('value').then(snap=>{
+    const trips = snap.val();
+    let todayTrips = 0;
+    let todayFees = 0;
+    let todayNet = 0;
+    
+    if(trips){
+      for(const id in trips){
+        const t = trips[id];
+        const tripDate = t.completedAt || t.acceptedAt;
+        if(tripDate >= today.getTime() && tripDate < tomorrow.getTime() && t.status === 'completed'){
+          todayTrips++;
+          const fee = (t.price || 0) * 0.05;
+          todayFees += fee;
+          todayNet += (t.price || 0) - fee;
+        }
+      }
+    }
+    
+    document.getElementById('modalTodayTrips').textContent = todayTrips;
+    document.getElementById('modalTodayFees').textContent = todayFees.toLocaleString() + ' MTN';
+    document.getElementById('modalTodayNet').textContent = todayNet.toLocaleString() + ' MTN';
+    
+    document.getElementById('balanceModal').classList.add('active');
+  });
+}
+
+function closeBalanceModal(){
+  document.getElementById('balanceModal').classList.remove('active');
 }
 
 // DASHBOARD
@@ -698,6 +869,7 @@ function showDashboard(){
   showSection('dashboardSection');
   document.getElementById('driverStatus').style.display = 'flex';
   updateDriverUI();
+  updateBalanceDisplay();
   loadDailyHistory();
   listenForTrips();
 }
@@ -717,6 +889,13 @@ function updateDriverUI(){
 // ONLINE STATUS
 function toggleOnline(){
   if(!currentDriver) return;
+  
+  // Verifica saldo antes de ficar online
+  if(!isOnline && (currentDriver.balance || 0) <= 0){
+    showToast('Saldo insuficiente. Contacte a administração.','error');
+    openBalanceModal();
+    return;
+  }
   
   isOnline = !isOnline;
   const toggle = document.getElementById('statusToggle');
@@ -783,6 +962,20 @@ function listenForTrips(){
     document.getElementById('activeTripContainer').innerHTML = '';
     currentTripId = null;
   });
+  
+  // Listener para mudanças no saldo
+  db.ref('drivers/'+currentDriver.id+'/balance').on('value', snap=>{
+    if(snap.exists()){
+      currentDriver.balance = snap.val();
+      updateBalanceDisplay();
+      
+      // Se saldo chegar a zero e estiver online, fica offline
+      if(currentDriver.balance <= 0 && isOnline){
+        toggleOnline();
+        showToast('Saldo esgotado. Não pode receber mais viagens.','error');
+      }
+    }
+  });
 }
 
 function renderRequests(trips){
@@ -791,6 +984,8 @@ function renderRequests(trips){
   if(!trips || !isOnline){
     container.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">'+(isOnline?'Sem pedidos':'Estás offline')+'</div><p>'+(isOnline?'Aguarde novos pedidos':'Fique online para receber pedidos')+'</p></div>';
     document.getElementById('pendingCount').textContent = '(0)';
+    stopNotificationAlarm();
+    pendingRequests = [];
     return;
   }
   
@@ -801,6 +996,19 @@ function renderRequests(trips){
   }
   
   document.getElementById('pendingCount').textContent = '('+available.length+')';
+  
+  // Verifica se há novos pedidos para tocar alarme
+  const newRequests = available.filter(r => !pendingRequests.some(pr => pr.id === r.id));
+  if(newRequests.length > 0){
+    startNotificationAlarm();
+  }
+  
+  // Se não há pedidos pendentes, para o alarme
+  if(available.length === 0){
+    stopNotificationAlarm();
+  }
+  
+  pendingRequests = available;
   
   if(available.length===0){
     container.innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><div class="empty-title">Sem pedidos disponíveis</div><p>Aguarde por novos pedidos</p></div>';
@@ -844,6 +1052,9 @@ function renderRequests(trips){
         '<div class="trip-stat">⏱️ '+(t.estimatedTime||Math.ceil(t.distance*2))+' min</div>'+
         '<div class="trip-stat"><span class="trip-stat-value">'+t.price+' MTN</span></div>'+
       '</div>'+
+      '<div style="background:rgba(255,107,0,0.1);padding:8px 12px;border-radius:8px;margin-top:12px;font-size:12px;color:var(--text-secondary)">'+
+        '💰 Taxa (5%): -' + Math.round(t.price * 0.05) + ' MTN • Recebe: ' + Math.round(t.price * 0.95) + ' MTN'+
+      '</div>'+
       '<div class="map-btn-container">'+
         '<button class="map-btn" onclick="openMapModal(\'request\', {pickupLat: '+(t.pickupLat||-25.9692)+', pickupLng: '+(t.pickupLng||32.5732)+', destLat: '+(t.destLat||-25.9692)+', destLng: '+(t.destLng||32.5732)+'})">'+
           '<span>🗺️</span> Ver no Mapa'+
@@ -859,8 +1070,6 @@ function renderRequests(trips){
       '</div>'+
     '</div>';
   }).join('');
-  
-  if(available.length>0) playNotificationSound();
 }
 
 function renderActiveTrip(trip){
@@ -884,6 +1093,9 @@ function renderActiveTrip(trip){
     btnAction = 'completed';
   }
   
+  const netAmount = Math.round((trip.price || 0) * 0.95);
+  const fee = Math.round((trip.price || 0) * 0.05);
+  
   container.innerHTML = '<div class="active-trip-banner">'+
     '<div class="banner-content">'+
       '<div class="banner-title">Viagem em Progresso</div>'+
@@ -898,6 +1110,17 @@ function renderActiveTrip(trip){
           '<div style="font-size:11px;opacity:0.8;margin-bottom:4px">DESTINO</div>'+
           '<div style="font-weight:600;font-size:14px">'+trip.destination+'</div>'+
           '<div style="font-size:13px;opacity:0.8">💰 '+trip.price+' MTN</div>'+
+        '</div>'+
+      '</div>'+
+      '<div style="background:rgba(0,0,0,0.2);padding:12px;border-radius:12px;margin-top:12px">'+
+        '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">'+
+          '<span>Valor da viagem</span><span>'+trip.price+' MTN</span>'+
+        '</div>'+
+        '<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--danger);margin-bottom:4px">'+
+          '<span>Taxa (5%)</span><span>-'+fee+' MTN</span>'+
+        '</div>'+
+        '<div style="display:flex;justify-content:space-between;font-size:14px;font-weight:600;color:var(--accent);padding-top:4px;border-top:1px solid rgba(255,255,255,0.1)">'+
+          '<span>Receberá</span><span>'+netAmount+' MTN</span>'+
         '</div>'+
       '</div>'+
       '<div class="map-btn-container" style="margin-top:16px">'+
@@ -927,7 +1150,6 @@ function openActiveTripMap(){
   db.ref('trips/'+currentTripId).once('value').then(snap=>{
     const trip = snap.val();
     if(trip){
-      // Get current driver location
       db.ref('availableDrivers/'+currentDriver.id).once('value').then(driverSnap=>{
         const driverData = driverSnap.val() || {};
         openMapModal('active', {
@@ -946,6 +1168,15 @@ function openActiveTripMap(){
 function acceptTrip(tripId){
   if(!isOnline || !currentDriver) return;
   if(currentTripId){ showToast('Já tens uma viagem ativa!','error'); return; }
+  
+  // Verifica saldo novamente
+  if((currentDriver.balance || 0) <= 0){
+    showToast('Saldo insuficiente para aceitar viagens.','error');
+    return;
+  }
+  
+  // Para o alarme ao aceitar
+  stopNotificationAlarm();
   
   db.ref('trips/'+tripId).update({
     driverId: currentDriver.id,
@@ -967,6 +1198,9 @@ function acceptTrip(tripId){
 }
 
 function rejectTrip(tripId){
+  // Para o alarme ao recusar
+  stopNotificationAlarm();
+  
   if(!rejectedTrips.includes(tripId)){
     rejectedTrips.push(tripId);
   }
@@ -995,7 +1229,7 @@ function updateStatus(status){
   });
 }
 
-// RATING
+// RATING COM SISTEMA DE PONTOS
 function showRatingModal(tripId){
   currentRatingTripId = tripId;
   selectedRating = 0;
@@ -1057,24 +1291,84 @@ function submitRating(){
       price: trip.price
     });
     
+    // SISTEMA DE PONTOS E CLASSIFICAÇÃO
+    let consecutiveNegative = currentDriver.consecutiveNegativeRatings || 0;
+    let currentRating = currentDriver.rating || 5.0;
+    let newRating = currentRating;
+    let isBlocked = false;
+    
+    // Se avaliação é negativa (1-2 estrelas)
+    if(selectedRating <= 2){
+      consecutiveNegative++;
+      
+      // A cada 3 pontos negativos seguidos, desconta 0.5 estrelas
+      if(consecutiveNegative >= 3){
+        newRating = Math.max(0, currentRating - 0.5);
+        consecutiveNegative = 0; // Reseta contador
+        
+        showToast('⚠️ Classificação reduzida para ' + newRating.toFixed(1) + ' ⭐', 'error');
+        
+        // Se chegar a 2.5 ou menos, bloqueia conta
+        if(newRating <= 2.5){
+          isBlocked = true;
+        }
+      } else {
+        showToast('Avaliação negativa registada (' + consecutiveNegative + '/3)', 'warning');
+      }
+    } else {
+      // Avaliação positiva reseta contador
+      if(consecutiveNegative > 0){
+        consecutiveNegative = 0;
+      }
+    }
+    
+    // Calcula ganhos (desconta 5%)
+    const grossAmount = trip.price || 0;
+    const fee = grossAmount * 0.05;
+    const netAmount = grossAmount - fee;
+    const newBalance = (currentDriver.balance || 0) + netAmount;
     const newTrips = (currentDriver.totalTrips||0) + 1;
-    const newEarnings = (currentDriver.totalEarnings||0) + (trip.price||0);
+    const newEarnings = (currentDriver.totalEarnings||0) + netAmount;
     
-    db.ref('drivers/'+currentDriver.id).update({
+    // Atualiza driver
+    const driverUpdates = {
       totalTrips: newTrips,
-      totalEarnings: newEarnings
+      totalEarnings: newEarnings,
+      balance: newBalance,
+      rating: newRating,
+      consecutiveNegativeRatings: consecutiveNegative
+    };
+    
+    // Se bloqueado, atualiza approved para false
+    if(isBlocked){
+      driverUpdates.approved = false;
+      showToast('🚫 CONTA BLOQUEADA! Classificação muito baixa.', 'error');
+    }
+    
+    db.ref('drivers/'+currentDriver.id).update(driverUpdates).then(()=>{
+      currentDriver.totalTrips = newTrips;
+      currentDriver.totalEarnings = newEarnings;
+      currentDriver.balance = newBalance;
+      currentDriver.rating = newRating;
+      currentDriver.consecutiveNegativeRatings = consecutiveNegative;
+      
+      updateDriverUI();
+      updateBalanceDisplay();
+      
+      db.ref('activeTrips/'+currentRatingTripId).remove();
+      currentTripId = null;
+      
+      closeRatingModal();
+      showToast('Viagem concluída! +' + Math.round(netAmount) + ' MTN', 'success');
+      loadDailyHistory();
+      
+      // Se bloqueado, redireciona
+      if(isBlocked){
+        setTimeout(() => {
+          logout();
+        }, 2000);
+      }
     });
-    
-    currentDriver.totalTrips = newTrips;
-    currentDriver.totalEarnings = newEarnings;
-    updateDriverUI();
-    
-    db.ref('activeTrips/'+currentRatingTripId).remove();
-    currentTripId = null;
-    
-    closeRatingModal();
-    showToast('Viagem concluída! +'+(trip.price||0)+' MTN','success');
-    loadDailyHistory();
   });
 }
 
@@ -1126,7 +1420,7 @@ function loadDailyHistory(){
     }
     
     const completedTrips = todayTrips.filter(t=>t.status==='completed');
-    const todayEarnings = completedTrips.reduce((sum,t)=>sum+(t.price||0),0);
+    const todayEarnings = completedTrips.reduce((sum,t)=>sum+Math.round((t.price||0)*0.95),0);
     document.getElementById('todayTrips').textContent = completedTrips.length;
     document.getElementById('todayEarnings').textContent = todayEarnings;
     
@@ -1141,6 +1435,7 @@ function loadDailyHistory(){
       const time = new Date(t.completedAt||t.acceptedAt).toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'});
       const isCompleted = t.status==='completed';
       const isCancelled = t.cancelledByDriver || t.cancelledByPassenger;
+      const netAmount = isCompleted ? Math.round((t.price||0)*0.95) : 0;
       
       return '<div class="history-card">'+
         '<div class="history-header">'+
@@ -1162,7 +1457,7 @@ function loadDailyHistory(){
           '<div class="history-passenger">'+
             '<span>👤</span> '+(t.passengerName||'Passageiro')+
           '</div>'+
-          '<div class="history-earning">'+(isCompleted?(t.price+' MTN'):isCancelled?'---':'Em andamento')+'</div>'+
+          '<div class="history-earning">'+(isCompleted?netAmount+' MTN':isCancelled?'---':'Em andamento')+'</div>'+
         '</div>'+
       '</div>';
     }).join('');
